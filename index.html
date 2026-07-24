@@ -86,6 +86,8 @@
   <button data-filter="code1">🗂 項目管理</button>
   <button data-filter="code2">🧰 服務管理</button>
   <button data-filter="code3">🏷 品牌管理</button>
+  <button data-filter="code4">📍 地區管理(2G)</button>
+  <button data-filter="code5">🎫 類型管理(2G)</button>
 </div>
 
 <table id="catalog">
@@ -139,6 +141,34 @@
   <td class="links">
     <a href="code3_system_spec.html">📄 規格文件 (HTML)</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/code3_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-24</td>
+</tr>
+<tr data-cat="code4">
+  <td class="idcell">04</td>
+  <td><span class="tag code1" style="background:var(--tag2-bg);color:var(--tag2-fg);">code4</span></td>
+  <td class="desc">
+    <span class="zh-name">地區管理（Region / 2G_Tcode4）</span>
+    ⚠ 不是 code1~3 的延伸，是獨立的「2G票務中心」選單子系統（TB_ALEX_*表、conn3連線）。三態狀態機(啟用/停用/待上架)，1G/2G欄位分工，雙資料庫寫入。
+  </td>
+  <td class="stat">8 個 ASP 檔<br>9 項已知缺陷</td>
+  <td class="links">
+    <a href="code4_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/code4_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-24</td>
+</tr>
+<tr data-cat="code5">
+  <td class="idcell">05</td>
+  <td><span class="tag code2" style="background:var(--tag2-bg);color:var(--tag2-fg);">code5</span></td>
+  <td class="desc">
+    <span class="zh-name">類型管理（Type / 2G_Tcode5）</span>
+    Code4 底下第五層，2G票務中心選單最後一層，往下直接連接真實商品/票券資料表。含購票須知雙版本、交易模式、手機號碼保留規則。
+  </td>
+  <td class="stat">8 個 ASP 檔<br>8 項已知缺陷</td>
+  <td class="links">
+    <a href="code5_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/code5_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
   </td>
   <td class="meta">2026-07-24</td>
 </tr>

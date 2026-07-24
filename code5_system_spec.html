@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>code5（2G_Tcode5）模組系統規格文件（供改寫參考）</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --warn-bg:#fff3e0; --warn-b:#f0b429;
+    --bad-bg:#fdecec; --bad-b:#e5484d; --ok-bg:#e8f7ee; --ok-b:#2f9e5b;
+    --nav-bg:#f7f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --warn-bg:#3a2e12; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-b:#b0454a; --ok-bg:#123321; --ok-b:#2f9e5b;
+      --nav-bg:#1a1d21;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; line-height:1.7;}
+  .layout{display:flex; min-height:100vh;}
+  nav.toc{width:270px; flex:0 0 270px; background:var(--nav-bg); border-right:1px solid var(--border); padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; font-size:13.5px;}
+  nav.toc h2{font-size:14px; color:var(--muted); margin:0 0 10px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:2px 0;}
+  nav.toc a{color:var(--fg); text-decoration:none; display:block; padding:4px 8px; border-radius:6px;}
+  nav.toc a:hover{background:var(--code-bg); color:var(--accent);}
+  nav.toc .sub{padding-left:14px; font-size:12.5px; color:var(--muted);}
+  main{flex:1; padding:36px 48px; max-width:1020px;}
+  h1{font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:12px;}
+  h2{font-size:20px; margin-top:48px; border-left:5px solid var(--accent); padding-left:10px;}
+  h3{font-size:16px; margin-top:28px; color:var(--accent);}
+  h4{font-size:14.5px; margin-top:18px;}
+  p{max-width:880px;}
+  code{background:var(--code-bg); padding:2px 5px; border-radius:4px; font-size:0.92em;}
+  pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; font-size:12.8px; line-height:1.55;}
+  pre code{background:none; padding:0;}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 45%, transparent);}
+  .badge{display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600;}
+  .b-page{background:var(--ok-bg); color:var(--ok-b); border:1px solid var(--ok-b);}
+  .b-handler{background:var(--warn-bg); color:var(--warn-b); border:1px solid var(--warn-b);}
+  .callout{border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid var(--border);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-b);}
+  .callout.bad{background:var(--bad-bg); border-color:var(--bad-b);}
+  .callout.ok{background:var(--ok-bg); border-color:var(--ok-b);}
+  .callout strong{display:block; margin-bottom:4px;}
+  .flow{font-family:"Consolas",monospace; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:16px; white-space:pre; overflow-x:auto; font-size:13px;}
+  .kv{display:grid; grid-template-columns:170px 1fr; gap:4px 12px; font-size:13.5px; margin:10px 0;}
+  .kv div:nth-child(odd){color:var(--muted);}
+  .file-anchor{scroll-margin-top:20px;}
+  .toc-h1{font-weight:700; margin-top:10px;}
+  footer{color:var(--muted); font-size:12px; margin-top:60px; border-top:1px solid var(--border); padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li class="toc-h1"><a href="#overview">1. 模組概觀</a></li>
+    <li class="toc-h1"><a href="#files">2. 檔案角色總覽</a></li>
+    <li class="toc-h1"><a href="#deps">3. 外部相依元件</a></li>
+    <li class="toc-h1"><a href="#arch">4. 架構重點（與code4的差異）</a></li>
+    <li class="toc-h1"><a href="#dataflow">5. 頁面流程圖</a></li>
+    <li class="toc-h1"><a href="#datamodel">6. 資料模型</a></li>
+    <li class="toc-h1"><a href="#pages">7. 逐頁詳細規格</a></li>
+    <li class="sub"><a href="#p-code5">7.1 2G_Tcode5.asp（列表）</a></li>
+    <li class="sub"><a href="#p-code5add">7.2 2G_Tcode5add.asp（新增表單）</a></li>
+    <li class="sub"><a href="#p-code5add_db">7.3 2G_Tcode5add_db.asp（新增寫入）</a></li>
+    <li class="sub"><a href="#p-code5mod_temp">7.4 2G_Tcode5mod_temp.asp（編輯/停用中繼）</a></li>
+    <li class="sub"><a href="#p-code5mod_db">7.5 2G_Tcode5mod_db.asp（編輯寫入）</a></li>
+    <li class="sub"><a href="#p-code5mod_stop">7.6 2G_Tcode5mod_stop.asp（停用寫入）</a></li>
+    <li class="sub"><a href="#p-code5ready">7.7 2G_Tcode5ready.asp（狀態調整表單）</a></li>
+    <li class="sub"><a href="#p-code5ready_db">7.8 2G_Tcode5ready_db.asp（狀態調整寫入）</a></li>
+    <li class="toc-h1"><a href="#rules">8. 商業規則彙整</a></li>
+    <li class="toc-h1"><a href="#defects">9. 已知問題／技術債</a></li>
+    <li class="toc-h1"><a href="#glossary">10. 術語對照表</a></li>
+    <li class="toc-h1"><a href="#rewrite">11. 改寫建議</a></li>
+    <li class="toc-h1"><a href="#appendix">12. 附錄：關鍵原始碼</a></li>
+  </ol>
+</nav>
+<main>
+
+<h1>code5（2G_Tcode5）模組系統規格文件</h1>
+<p class="callout warn">
+<strong>本文件建議與 code4_system_spec.html 一併閱讀</strong>
+code5 是 code4 模組（<code>2G_Tcode4*.asp</code>，地區管理）再往下一層，兩者架構、雙資料庫連線、1G/2G欄位分工、三態狀態機幾乎完全對稱。
+本文件會直接指出與 code4 模組的差異，不重複解釋完全相同的機制；但商業規則、缺陷、附錄仍會完整列出，確保單獨閱讀本文件也能改寫。
+</p>
+
+<h2 id="overview">1. 模組概觀</h2>
+<p>
+此模組中文名稱為「<b>類型管理</b>」，是「2G 票務中心」選單系統的第五層節點，也是目前已知的選單設定<b>最後一層</b>——
+其下直接連接真正的可售商品／票券資料（<code>TB_ALEX_MainTicket_200604</code>，不在本次範圍內，僅在停用檢查中被引用）。
+</p>
+<div class="flow">TB_ALEX_RepairCode1_200501（業態）
+   └─ TB_ALEX_RepairCode2_200501（品牌）
+         └─ TB_ALEX_RepairCode3_200501（票務）
+               └─ TB_ALEX_RepairCode4_200601（地區，code4模組）
+                     └─ TB_ALEX_RepairCode5_200601（類型）   ← 本模組管理的對象
+                           └─ TB_ALEX_MainTicket_200604（商品/票券，範圍外，僅供 mod_stop 前置檢查引用）
+</div>
+<p>
+除了延續 code4 模組「1G欄位＋2G欄位」的分工設計與三態狀態機（啟用/停用/待上架），code5 額外新增了三組 code4 沒有的欄位群：
+</p>
+<ul>
+  <li><b>手機號碼保留設定</b>（<code>if_keep_tel</code>）：註明「目前只適用活動票券」，屬於票務下單流程的特殊規則。</li>
+  <li><b>購票須知檔案（雙版本）</b>：<code>html_file</code>（1G版）與 <code>html_file_2g</code>（2G版），各自透過彈出視窗上傳HTML/檔案，並可預覽。</li>
+  <li><b>交易模式（<code>PG_Mode</code>）</b>：選擇金流／付款閘道模式，新增與編輯時皆為必填（除了停用/待上架頁面不需要）。</li>
+  <li><b>跳過閱讀服務須知頁（<code>If_skipHtml</code>）</b>：控制購買流程是否強制顯示服務須知頁面。</li>
+</ul>
+
+<h2 id="files">2. 檔案角色總覽</h2>
+<table>
+<tr><th>檔名</th><th>角色</th><th>類型</th><th>用途一句話</th></tr>
+<tr><td><code>2G_Tcode5.asp</code></td><td>列表／查詢</td><td><span class="badge b-page">頁面</span></td><td>四層連動下拉（業態→品牌→票務→地區）+ 類型名稱查詢，分頁列表</td></tr>
+<tr><td><code>2G_Tcode5add.asp</code></td><td>新增表單</td><td><span class="badge b-page">頁面</span></td><td>四層連動下拉選定所屬地區，填寫類型編號/名稱/手機號碼規則/購票須知/交易模式等全部欄位</td></tr>
+<tr><td><code>2G_Tcode5add_db.asp</code></td><td>新增寫入</td><td><span class="badge b-handler">處理器</span></td><td>驗證（99互斥規則，<b>但有變數命名bug</b>）並INSERT新類型，含30個欄位</td></tr>
+<tr><td><code>2G_Tcode5mod_temp.asp</code></td><td>編輯/停用中繼表單</td><td><span class="badge b-page">頁面</span></td><td>依mod參數切換編輯/停用；額外提供【設定代碼】【2G設定代碼】外部連結入口</td></tr>
+<tr><td><code>2G_Tcode5mod_db.asp</code></td><td>編輯寫入</td><td><span class="badge b-handler">處理器</span></td><td>視情況更新1G欄位，無條件更新2G欄位＋2G購票須知檔名，寫入操作記錄（注意：<b>本模組沒有叫"mod.asp"的檔案，"mod_db.asp"本身就是實際會被呼叫的處理器</b>，與code3模組同名檔案是孤兒的情況不同）</td></tr>
+<tr><td><code>2G_Tcode5mod_stop.asp</code></td><td>停用寫入</td><td><span class="badge b-handler">處理器</span></td><td>檢查底層商品(<code>TB_ALEX_MainTicket_200604</code>，需<code>if_batch=1</code>)無啟用中項目後停用</td></tr>
+<tr><td><code>2G_Tcode5ready.asp</code></td><td>狀態調整表單</td><td><span class="badge b-page">頁面</span></td><td>可切換啟用/待上架，並可調整預售期間</td></tr>
+<tr><td><code>2G_Tcode5ready_db.asp</code></td><td>狀態調整寫入</td><td><span class="badge b-handler">處理器</span></td><td>UPDATE預售期間與Use_flag，寫入操作記錄</td></tr>
+</table>
+
+<h2 id="deps">3. 外部相依元件</h2>
+<table>
+<tr><th>路徑</th><th>被哪些檔案引用</th><th>備註</th></tr>
+<tr><td><code>../../../db/dbload.asp</code></td><td>全部8個檔案</td><td>提供conn（1G）、conn3（2G/ALEX）</td></tr>
+<tr><td><code>../../../db/chk_session2.asp</code></td><td>add、mod_temp、ready</td><td>登入驗證</td></tr>
+<tr><td><code>../inc/func_2G_Common.asp</code>／<code>func_HTML.asp</code>／<code>./func_2G_Ticket.asp</code>／<code>../inc/2G_Common.js</code></td><td>add、add_db、mod_db、mod_temp、ready</td><td>與code4模組共用同一套函式庫，實作細節同樣未知（見code4規格D4-08）</td></tr>
+<tr><td><code>2G_upload_code3.asp</code></td><td>add、mod_temp（購票須知上傳按鈕）</td><td><b>code4模組沒有這支依賴</b>，是code5特有的檔案上傳頁，用於「購票須知(1G/2G)」欄位</td></tr>
+<tr><td><code>&lt;Src_Path_1G&gt;Tcode5stopmsg.asp</code></td><td>mod_temp.asp的暫停訊息按鈕</td><td>同code4模組模式，指向資料夾外、無2G_前綴的檔案，行為未知</td></tr>
+<tr><td><code>&lt;Src_Path_1G&gt;code4SetShortCode.asp</code> / <code>code4SetShortCode_2G.asp</code></td><td>mod_temp.asp的【設定代碼】【2G設定代碼】按鈕</td><td><b>code5特有</b>的額外功能入口，命名疑似沿用「code4」但實際掛在code5的編輯頁面上，用途與內容完全未知，且連結中使用了本檔案從未賦值的變數 <code>pdid</code>（見D5-06）</td></tr>
+</table>
+
+<h2 id="arch">4. 架構重點（與code4的差異）</h2>
+<div class="kv">
+<div>多一層父鏈</div><div>本模組所有查詢都是五表join（Code1~Code4皆須確認關聯與狀態），比code4模組多一層。</div>
+<div>1G/2G欄位分工</div><div>與code4完全相同的雙旗標機制（<code>ReadOnly_1GField</code>／<code>ReadOnly_2GField</code>），但code5額外把「購票須知(1G)」欄位的顯示邏輯綁在 <code>ReadOnly_1GField</code>、「購票須知(2G)」欄位綁在 <code>ReadOnly_2GField</code>——即兩個版本的購票須知，各自跟隨1G/2G欄位群組的唯讀規則。</div>
+<div>底層檢查對象不同</div><div>code4停用前檢查的是下一層設定表(Code5)；<b>code5停用前檢查的不是設定表，而是真正的商品/票券資料表 <code>TB_ALEX_MainTicket_200604</code></b>，且多了一個條件 <code>if_batch=1</code>（推測代表「批次上架」的商品才需要被此檢查擋住，未批次上架的商品不影響類型的停用）。</div>
+<div>交易模式為必填</div><div>code4沒有交易模式欄位；code5的<code>PG_Mode</code>在新增與編輯（1G欄位可編輯時）皆為前端JS強制必填。</div>
+</div>
+
+<h2 id="dataflow">5. 頁面流程圖</h2>
+<div class="flow">2G_Tcode5.asp（列表，四層連動查詢：業態→品牌→票務→地區→[本頁類型]）
+ │
+ ├─[新增代碼] ──► 2G_Tcode5add.asp ──submit──► 2G_Tcode5add_db.asp
+ │                                                 ├─99互斥檢查（⚠含變數命名bug，見D5-01）
+ │                                                 └─成功 → INSERT(30個欄位) → 導回
+ │
+ ├─[修改]（列表頁每列都顯示）
+ │      └────► 2G_Tcode5mod_temp.asp?mod=1
+ │                   │ submit
+ │                   ▼
+ │             2G_Tcode5mod_db.asp ──視use_flag_old="1"才更新1G欄位──► 無條件更新2G欄位+html_file_2g
+ │                                                                  ──► 寫入TB_GD_UserClick_Log_200507（conn）
+ │                                                                  ──► 導回
+ │
+ ├─[停用]（僅Use_flag=0時顯示）
+ │      └────► 2G_Tcode5mod_temp.asp?mod=2&Use_flag=1
+ │                   │ submit
+ │                   ▼
+ │             2G_Tcode5mod_stop.asp ──► 檢查TB_ALEX_MainTicket_200604(if_batch=1)是否有啟用中商品
+ │                                          ├─是 → alert(禁止) → 導回
+ │                                          └─否 → UPDATE Use_flag='1' → 寫記錄 → 導回
+ │
+ └─[待上架]（mod_temp.asp內按鈕）
+        └────► 2G_Tcode5ready.asp ──submit──► 2G_Tcode5ready_db.asp
+                                                  ──► UPDATE預售期間+Use_flag ──► 寫記錄 ──► 導回
+
+（mod_temp.asp 另有【暫停訊息】【設定代碼】【2G設定代碼】三個按鈕連到資料夾外的檔案，行為未知）
+</div>
+
+<h2 id="datamodel">6. 資料模型</h2>
+<h3>6.1 資料表一覽</h3>
+<table>
+<tr><th>名稱</th><th>連線</th><th>性質</th><th>本模組操作方式</th></tr>
+<tr><td><code>TB_ALEX_RepairCode1~4</code></td><td>conn3</td><td>祖先鏈</td><td>僅SELECT，確認關聯與use_flag=0</td></tr>
+<tr><td><code>TB_ALEX_RepairCode5_200601</code></td><td>conn3</td><td>主檔（類型），本模組核心</td><td>SELECT/INSERT/UPDATE</td></tr>
+<tr><td><code>TB_ALEX_MainTicket_200604</code></td><td>conn3</td><td>商品/票券資料（範圍外）</td><td>僅SELECT，停用前檢查，條件含<code>if_batch=1</code></td></tr>
+<tr><td><code>TB_GD_UserClick_Log_200507</code></td><td>conn（非conn3）</td><td>操作記錄，1G主庫</td><td>每次編輯/停用/狀態調整都會INSERT，與code4模組相同的雙庫寫入模式</td></tr>
+</table>
+
+<h3>6.2 <code>TB_ALEX_RepairCode5_200601</code> 欄位明細</h3>
+<table>
+<tr><th>分類</th><th>欄位</th><th>說明</th></tr>
+<tr><td rowspan="7">1G欄位</td><td><code>Code5</code>(PK)、<code>code1/code2/code3/code4</code>(FK)</td><td>關聯鏈</td></tr>
+<tr><td><code>Item_5</code></td><td>使用者自訂類型編號，maxlength=10~12（新增/編輯頁不一致，見D5-07）</td></tr>
+<tr><td><code>Item5_name</code></td><td>類型名稱，maxlength=25</td></tr>
+<tr><td><code>Item5_pic</code></td><td>圖示檔名</td></tr>
+<tr><td><code>Use_flag</code></td><td>0=啟用/1=停用/2=待上架</td></tr>
+<tr><td><code>startpresaledate/time</code>, <code>stoppresaledate/time</code></td><td>預售期間（EndDate+1天慣例同其他模組）</td></tr>
+<tr><td><code>if_keep_tel</code></td><td>0=保留手機號碼／1=不保留（新增頁預設值="1"不保留；命名與數值語意需注意：0才是"保留"）</td></tr>
+<tr><td rowspan="2">購票須知（code5特有）</td><td><code>html_file</code></td><td>1G版購票須知檔案路徑，格式固定<code>"\html\" &amp; 檔名</code></td></tr>
+<tr><td><code>html_file_2g</code></td><td>2G版購票須知檔案路徑，同上格式</td></tr>
+<tr><td rowspan="11">2G欄位（外觀/下一頁UI，與code4同構）</td><td><code>Sort</code>, <code>Code5_Name</code>, <code>SubTitle</code></td><td>排序、按鈕主標(必填)、副標</td></tr>
+<tr><td><code>Code5_Pic</code>/<code>ShowCode5_Pic</code>, <code>ShowHot</code></td><td>按鈕小圖與主打</td></tr>
+<tr><td><code>Logo_Pic</code>/<code>ShowLogo_Pic</code></td><td>下一頁LOGO</td></tr>
+<tr><td><code>MapText</code>/<code>ShowMapText</code>, <code>Title</code></td><td>服務指引與頁面標題</td></tr>
+<tr><td><code>IsStep</code>, <code>StepMode</code></td><td>步驟進度條</td></tr>
+<tr><td><code>If_skipHtml</code></td><td>1=不跳過(預設)／0=跳過閱讀服務須知頁</td></tr>
+<tr><td><code>PG_Mode</code></td><td>交易模式，值域來自 <code>getTK_PG_ModeArray()</code>（函式內容未知），新增/編輯時必填</td></tr>
+</table>
+
+<h3>6.3 停用前檢查（與code4/code1/code2/code3模組的差異）</h3>
+<pre><code>Select a.item5_name From TB_ALEX_RepairCode5_200601 a, TB_ALEX_MainTicket_200604 b
+where a.code5=b.code5 and a.code5=&lt;id&gt; and b.use_flag=0 and b.if_batch=1
+</code></pre>
+<p>只有在 <code>TB_ALEX_MainTicket_200604</code>（真正商品表）裡找到 <code>use_flag=0</code>（啟用中）且 <code>if_batch=1</code> 的記錄時，才會擋下停用。<code>if_batch</code> 的確切業務語意（可能是「是否走批次上架流程」）未知，改寫前應向熟悉2G商品管理模組的人確認。</p>
+
+<h2 id="pages">7. 逐頁詳細規格</h2>
+
+<h3 id="p-code5" class="file-anchor"><span class="badge b-page">頁面</span> 7.1 2G_Tcode5.asp — 類型列表／查詢</h3>
+<div class="kv">
+<div>輸入參數</div><div><code>mid</code>、<code>page</code>、<code>flag</code>、<code>Item_1~Item_4</code>（四層連動下拉）、<code>Item_5</code>、<code>Item5_name</code></div>
+<div>資料來源</div><div>五表join，條件 <code>b.use_flag=0 and c.use_flag=0 and d.use_flag=0</code>（<b>此處正確檢查了Code2/Code1/Code4，但同樣沒有檢查Code3(票務)本身的use_flag</b>，與code4模組的D4-01是同一種疏漏）</div>
+<div>顯示邏輯</div><div>狀態文字判斷邏輯正確處理三態：<code>Use_flag="0"→使用中；="2"→待上架；其餘→未啟用</code>（比code4.asp列表頁只判斷"0"和其餘兩種更完整，code4.asp沒有明確處理"2"的顯示文字）</div>
+</div>
+
+<h3 id="p-code5add" class="file-anchor"><span class="badge b-page">頁面</span> 7.2 2G_Tcode5add.asp — 新增表單</h3>
+<div class="kv">
+<div>四層連動下拉</div><div>業態→品牌→票務→地區，前三層用 <code>onchange location.href</code> 整頁重載，第四層（地區選擇）改用JS直接設定預設排序/步驟樣式（<code>GetDefaultSortTK_1G('5',...)</code>、<code>GetDefaultStepModeTK('1g06t5',...)</code>）</div>
+<div>特殊欄位</div><div><code>if_keep_tel</code>（單選，預設"不保留"）；購票須知(1G)/(2G)兩個檔案上傳欄位，畫面上顯示用的 <code>cont</code>、<code>pcode_in</code> 變數<b>在本檔案從未被賦值</b>（見D5-05，新增模式下顯示空白本身不算錯，但變數缺乏定義是脆弱設計）；<code>PG_Mode</code>下拉為必填</div>
+<div>送出目標</div><div>POST → <code>2G_Tcode5add_db.asp</code></div>
+</div>
+
+<h3 id="p-code5add_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.3 2G_Tcode5add_db.asp — 新增寫入</h3>
+<div class="kv">
+<div class="callout bad">程式缺陷（D5-01，重要）：99判斷用了錯的變數名稱</div><div>
+第75行：<code>if item_4="99" then</code>——但本檔案從未對小寫的 <code>item_4</code> 賦值（只有大寫的 <code>Item_5</code> 被賦值），也就是說<b>這個條件永遠是False（因為item_4永遠是空字串）</b>。
+正確應該檢查的是 <code>item_5</code>（新增的類型編號本身），程式很可能是直接複製 <code>2G_Tcode4add_db.asp</code> 的對應區塊卻忘記把 <code>item_4</code> 改成 <code>item_5</code>。
+實際後果：不管使用者是否要新增編號99的類型，程式一律會走「else」分支（<code>sqlsel="select * from ... where Item_5='&lt;Item_5&gt;' and ..."</code>）。
+這個else分支本身對「一般編號」而言是正確查詢，所以<b>一般情況下功能表面上仍正常運作</b>；但「新增編號99時應該改查『此地區下是否有任何啟用中類型』」這條特別規則<b>完全不會被觸發</b>，等同99互斥規則在新增流程中失效了一半（另一半——查詢是否已存在啟用中的99——在第61行是獨立查詢，不受此bug影響，仍正常運作）。
+</div>
+<div>資料轉換</div><div>與code4模組相同，所有文字欄位經過 <code>ConvUni2ASC()</code></div>
+<div>SQL(INSERT)</div><div>一次寫入30個欄位（1G基本欄位+html_file雙版本+if_keep_tel+2G外觀欄位+If_skipHtml+PG_Mode）</div>
+</div>
+
+<h3 id="p-code5mod_temp" class="file-anchor"><span class="badge b-page">頁面</span> 7.4 2G_Tcode5mod_temp.asp — 編輯／停用中繼表單</h3>
+<div class="kv">
+<div>資料讀取</div><div>六表join（含商品表以外的全部設定表），<b>本檔案有正確呼叫 <code>response.End</code></b>（不像code2/code3模組的同類頁面漏放，也優於code4mod_temp.asp——不，code4mod_temp.asp其實也有正確放response.End，只有code4ready.asp和code5ready.asp漏放，見D5-04）</div>
+<div>ReadOnly判斷</div><div>與code4模組相同雙旗標機制；購票須知(1G)欄位的可編輯性綁 <code>ReadOnly_1GField</code>，購票須知(2G)欄位綁 <code>ReadOnly_2GField</code></div>
+<div>額外按鈕</div><div>【待上架】→ <code>2G_Tcode5ready.asp</code>；【暫停訊息】→ 資料夾外<code>Tcode5stopmsg.asp</code>；【設定代碼】【2G設定代碼】→ 資料夾外的<code>code4SetShortCode.asp</code>/<code>code4SetShortCode_2G.asp</code>，且URL中使用了本檔案未賦值的變數<code>pdid</code>（見D5-06）</div>
+</div>
+
+<h3 id="p-code5mod_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.5 2G_Tcode5mod_db.asp — 編輯寫入</h3>
+<div class="kv">
+<div>條件式更新1G欄位</div><div>
+僅當 <code>use_flag_old="1"</code> 才進入此區塊；區塊內先依 <code>Use_flag</code> 是否為"1"組出兩種略有差異的查詢（檢查地區Code4是否符合條件），若查無資料 → alert「此類型使用狀態為停止,無法開啟此類型!」並 <b>正確呼叫 <code>response.End</code></b>；否則UPDATE八個1G欄位（不含Item_4/code1~4，那些是地區/父鏈資訊不會被類型編輯頁改動）。
+</div>
+<div>2G欄位（含html_file_2g）</div><div>無條件更新，共10個欄位</div>
+<div>稽核</div><div>寫入 <code>TB_GD_UserClick_Log_200507</code></div>
+</div>
+
+<h3 id="p-code5mod_stop" class="file-anchor"><span class="badge b-handler">處理器</span> 7.6 2G_Tcode5mod_stop.asp — 停用寫入</h3>
+<div class="kv">
+<div>前置檢查</div><div>見6.3節，查<code>TB_ALEX_MainTicket_200604</code>而非設定表本身</div>
+<div>SQL(UPDATE)</div><div><code>Update TB_ALEX_RepairCode5_200601 set Use_flag='1' where Code5=id</code></div>
+</div>
+
+<h3 id="p-code5ready" class="file-anchor"><span class="badge b-page">頁面</span> 7.7 2G_Tcode5ready.asp — 狀態調整表單</h3>
+<div class="kv">
+<div class="callout bad">程式缺陷（D5-04，同code4的D4-04）：查無資料未中止</div><div><code>if rsring.eof then alert(...) end if</code> 沒有 <code>response.End</code>，會在後續讀取欄位時出錯。</div>
+<div class="callout bad">程式缺陷（同D4-05）：<code>mod_status</code>／<code>mod2</code> 未賦值</div><div>本檔案完全沒有 <code>mod2=request("mod")</code> 這一行（code4ready.asp至少還賦值了mod2，只是沒賦值mod_status；本檔案<b>連mod2也沒賦值</b>），導致畫面上「開始預售時間」等區塊判斷 <code>&lt;%if mod2="2" then%&gt;</code> 永遠走else分支（即永遠當作「非停用檢視」處理，顯示可編輯的日期選擇器），以及標題／按鈕的 <code>mod_status</code> 一樣顯示空白。</div>
+<div>送出目標</div><div>POST → <code>2G_Tcode5ready_db.asp</code></div>
+</div>
+
+<h3 id="p-code5ready_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.8 2G_Tcode5ready_db.asp — 狀態調整寫入</h3>
+<div class="kv">
+<div>邏輯</div><div>直接UPDATE預售期間與Use_flag，無任何檢查（與code4ready_db.asp同構）</div>
+<div>稽核</div><div>寫入記錄時 <code>funname</code> 固定填「票務中心」、<code>subname</code> 固定填「<b>類型管理</b>」——注意這裡跟code4ready_db.asp寫的「業態管理」不同，本檔案的稽核文字反而是對的（code4模組那邊很可能才是文案殘留，見code4規格文件D4-03同類問題的又一佐證）</div>
+</div>
+
+<h2 id="rules">8. 商業規則彙整</h2>
+<ol>
+<li><b>五層父鏈確認：</b>幾乎所有查詢要求Code1/Code2/Code4啟用中；同code4模組一樣沒有一致檢查Code3(票務)。</li>
+<li><b>三態狀態機：</b>與code4模組完全相同（0啟用/1停用/2待上架）。</li>
+<li><b>1G／2G欄位權限分工：</b>與code4模組相同機制，額外把購票須知兩個版本分別掛在對應的旗標下。</li>
+<li><b>99互斥規則（新增部分失效）：</b>「已存在啟用中99則擋新增」仍有效；但「新增99時應檢查是否已有其他啟用中類型」因D5-01變數bug而失效。</li>
+<li><b>編輯時的重複/占用檢查：</b>僅在1G欄位可編輯(即目前為停用狀態)時，先確認所屬地區(Code4)符合特定use_flag條件才允許更新，否則整段拒絕並中止（此處正確中止，優於code4mod.asp的D4-02情況）。</li>
+<li><b>停用前檢查真正的商品資料：</b>與code1~4模組「檢查下一層設定表」不同，code5檢查的是實際商品資料表且有<code>if_batch=1</code>條件。</li>
+<li><b>交易模式必填：</b>PG_Mode在1G欄位可編輯情境下為必填，是本模組獨有的規則。</li>
+</ol>
+
+<h2 id="defects">9. 已知問題／技術債</h2>
+<table>
+<tr><th>編號</th><th>問題</th><th>影響</th><th>出現位置</th></tr>
+<tr><td>D5-01</td><td><code>2G_Tcode5add_db.asp</code> 第75行判斷用 <code>item_4="99"</code>，應為 <code>item_5="99"</code>（本檔案從未定義item_4）</td><td>新增類型時，「99編號應檢查是否已有其他啟用中類型」的規則永遠不會被觸發（另一半99檢查仍正常）</td><td>2G_Tcode5add_db.asp 第75行</td></tr>
+<tr><td>D5-02</td><td>列表與多數查詢沒有檢查Code3(票務)本身的use_flag，與code4模組的D4-01同一類疏漏</td><td>票務被停用後其下類型可能仍出現在列表/可操作</td><td>2G_Tcode5.asp、2G_Tcode5mod_temp.asp等</td></tr>
+<tr><td>D5-03</td><td>SQL字串串接、<code>err&lt;&gt;0</code>錯誤處理形同虛設——通用缺陷</td><td>同前述所有模組</td><td>幾乎所有檔案</td></tr>
+<tr><td>D5-04</td><td><code>2G_Tcode5ready.asp</code> 完全沒有 <code>mod2=request("mod")</code> 賦值語句，也沒有在EOF時<code>response.End</code></td><td>畫面上「開始/停止預售時間」永遠顯示可編輯版面（即使理論上該頁該顯示唯讀），且標題/按鈕文字空白；查無資料時會在空Recordset上出錯</td><td>2G_Tcode5ready.asp 全檔</td></tr>
+<tr><td>D5-05</td><td><code>2G_Tcode5add.asp</code> 使用 <code>cont</code>、<code>pcode_in</code> 兩個從未賦值的變數（用於購票須知欄位顯示與上傳彈窗參數）</td><td>新增模式下顯示空白尚可接受，但若未來邏輯變動誤以為這兩個變數有值，會是潛在陷阱；上傳彈窗網址中的<code>pcode_in</code>參數目前永遠是空字串，需確認彈窗頁面能否正確處理空值</td><td>2G_Tcode5add.asp 第223-224、230-231行</td></tr>
+<tr><td>D5-06</td><td><code>2G_Tcode5mod_temp.asp</code> 的【設定代碼】【2G設定代碼】連結使用了從未賦值的變數 <code>pdid</code></td><td>連到外部頁面時該參數永遠是空字串，實際功能是否受影響取決於外部頁面（未知）如何處理空值</td><td>2G_Tcode5mod_temp.asp 第524-525行</td></tr>
+<tr><td>D5-07</td><td><code>Item_5</code> 的 <code>maxlength</code> 在新增頁(2G_Tcode5add.asp)是15、編輯頁(mod_temp.asp)是15，但欄位本身資料庫定義長度、以及code4模組對應欄位(<code>Item_4</code> maxlength=10)並不一致，且add.asp的input maxlength=15但資料庫insert沒有額外做長度檢查</td><td>前端長度限制與其他模組不完全對稱，非致命但改寫時應統一規則或至少明確記錄各層允許的編號長度</td><td>2G_Tcode5add.asp、2G_Tcode5mod_temp.asp</td></tr>
+<tr><td>D5-08</td><td>與code4模組相同：雙資料庫寫入（conn3主檔+conn稽核log）沒有交易包裹；四個共用函式庫(<code>func_2G_Common.asp</code>等)實作未知</td><td>同code4規格文件D4-07、D4-08</td><td>全模組</td></tr>
+</table>
+
+<h2 id="glossary">10. 中文／系統術語對照表</h2>
+<table>
+<tr><th>原文用詞</th><th>欄位/識別字</th><th>建議英文對應</th></tr>
+<tr><td>類型 / 類型代碼</td><td><code>Code5</code>, <code>Item_5</code>, <code>Item5_name</code></td><td>Type / Category Code</td></tr>
+<tr><td>保留手機號碼</td><td><code>if_keep_tel</code>（注意：0=保留，1=不保留）</td><td>Keep Phone Number Flag</td></tr>
+<tr><td>購票須知</td><td><code>html_file</code>（1G）, <code>html_file_2g</code>（2G）</td><td>Purchase Notice Document</td></tr>
+<tr><td>交易模式</td><td><code>PG_Mode</code></td><td>Payment Gateway Mode</td></tr>
+<tr><td>跳過閱讀服務須知頁</td><td><code>If_skipHtml</code></td><td>Skip Terms Page Flag</td></tr>
+<tr><td>批次上架</td><td><code>if_batch</code>（於<code>TB_ALEX_MainTicket_200604</code>，範圍外）</td><td>Batch Listing Flag（語意待確認）</td></tr>
+</table>
+
+<h2 id="rewrite">11. 改寫建議</h2>
+<ul>
+<li><b>修正D5-01後重新確認99互斥規則的完整性</b>，並考慮跟code2/code3/code4模組合併成一個共用的「保留編號互斥檢查」服務函式，避免同一個bug模式（變數名稱抄錯）在五個模組裡各自出現一次。</li>
+<li><b>確認 <code>if_batch</code> 與 <code>TB_ALEX_MainTicket_200604</code> 的完整結構</b>——這是本模組往下延伸到真正商品資料的唯一窗口，改寫商品管理相關功能時必須先取得這張表的完整定義。</li>
+<li><b>購票須知雙版本檔案的儲存/預覽機制</b>（<code>\html\</code>路徑慣例、<code>MM_openBrWindow</code>預覽）建議在新系統中改為物件儲存(如S3)搭配版本化URL，不再依賴伺服器本機路徑拼接字串。</li>
+<li><b>清理未賦值變數</b>（<code>pdid</code>、<code>cont</code>、<code>pcode_in</code>）：改寫時這些應該被明確定義為函式參數或明確設為預設值，不應該依賴VBScript「未賦值=空字串」的隱性行為。</li>
+<li>其餘建議同 code4 規格文件第11章（API設計、雙資料庫交易、狀態機顯式化等），本模組可視為code4模組的下一層資源：<code>/api/groups/{groupId}/regions/{code4}/types/{code5}</code>。</li>
+</ul>
+
+<h2 id="appendix">12. 附錄：關鍵原始碼</h2>
+<p>以下收錄與已知缺陷直接相關的關鍵檔案片段；完整逐行內容請對照資料夾內原始 <code>.asp</code> 檔案（Big5編碼）。</p>
+
+<h3 class="file-anchor">12.1 2G_Tcode5add_db.asp（含 D5-01 缺陷位置）</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;!--#include file="../inc/func_2G_Common.asp" --&gt;
+&lt;%
+code1     	=Request("code1")
+code2     	=Request("code2")
+code3     	=Request("code3")
+code4     	=Request("code4")
+Item_5     	=ConvUni2ASC(Request("Item_5"))
+Item5_name     	=ConvUni2ASC(Request("Item5_name"))
+item5_pic= ConvUni2ASC(request("logo"))
+use_flag=request("use_flag")
+html_file="\html\" &amp; ConvUni2ASC(request("fileid"))
+html_file_2g="\html\" &amp; ConvUni2ASC(request("fileid_2g"))
+if_keep_tel=Request("if_keep_tel")
+' ... 預售期間/2G欄位轉換，與code4add_db.asp同構，略 ...
+PG_Mode=FixFlagValue(Request("PG_Mode"), "", TK_PG_Modes.Keys)
+
+sqlsel_99="select * from TB_ALEX_RepairCode5_200601 where code1="&amp;code1&amp;" and code2="&amp;code2&amp;" and code3="&amp;code3&amp;" and code4="&amp;code4&amp;" and use_flag=0 and item_5='99'"
+set rsring_99 = conn3.Execute( sqlsel_99 )
+ if not rsring_99.eof  then
+	&lt;script&gt;alert("此服務已有地區編號為99,無法新增!"); location.href='&lt;%=Session("url")%&gt;';&lt;/script&gt;
+ else
+
+' *** D5-01: 這裡應該檢查 item_5，卻寫成 item_4（本檔案從未賦值，永遠是空字串，此條件恆為False） ***
+if item_4="99" then
+	sqlsel="select * from TB_ALEX_RepairCode5_200601 where code1="&amp;code1&amp;" and code2="&amp;code2&amp;" and code3="&amp;code3&amp;" and code4="&amp;code4&amp;" and use_flag=0"
+else
+	sqlsel="select * from TB_ALEX_RepairCode5_200601 where Item_5='"&amp;Item_5&amp;"' and code1="&amp;code1&amp;" and code2="&amp;code2&amp;" and code3="&amp;code3&amp;" and code4="&amp;code4&amp;" and use_flag=0"
+end if
+set rsring = conn3.Execute( sqlsel )
+
+if not rsring.eof  then
+	&lt;script&gt;
+	&lt;% if item_5="99" then %&gt;
+	alert("此服務有其他相同編號且其狀態為啟用!99無法新增!");
+	&lt;% else %&gt;
+	alert("類型編號重複且其狀態為啟用,新增失敗!!");
+	&lt;% end if %&gt;
+	history.go(-1);
+	&lt;/script&gt;
+else
+	sql = "Insert Into TB_ALEX_RepairCode5_200601 (code1,code2,code3,code4,Item_5,Item5_name,Item5_pic,html_file,html_file_2g,use_flag,startpresaledate,startpresaletime,stoppresaledate,stoppresaletime,if_keep_tel,Sort,Code5_Name,SubTitle,Code5_Pic,ShowCode5_Pic,ShowHot,Logo_Pic,ShowLogo_Pic,MapText,ShowMapText,Title,IsStep,StepMode,If_skipHtml,PG_Mode) Values (...)"
+	conn3.execute(sql)
+	if err&lt;&gt;0 then
+		&lt;script&gt;alert("新增失敗!"); history.go(-1);&lt;/script&gt;
+		response.end
+	else
+		&lt;script&gt;alert("新增成功!"); location.href='&lt;%=Session("url")%&gt;';&lt;/script&gt;
+	end if
+end if
+end if
+%&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.2 2G_Tcode5mod_stop.asp（完整，展示與其他模組不同的停用前檢查對象）</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+id=trim(request("Code5"))
+Item_2=request("Item_2")
+item_1=request("item_1")
+item_3=request("item_3")
+item_4=request("item_4")
+item_5=request("item_5")
+actionid=request("mid")
+
+sqlsel="Select a.item5_name From TB_ALEX_RepairCode5_200601 a , TB_ALEX_MainTicket_200604 b where a.code5=b.code5 and  a.code5= " &amp; id &amp; " and b.use_flag=0 and b.if_batch=1"
+
+set rsring = conn3.Execute( sqlsel )
+
+if not rsring.eof  then
+	&lt;script language=javascript&gt;
+		alert("此類型於商品管理已啟用無法停用!\n若要停用請先停用此類型的商品");
+		location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+else
+	SQL = " Update TB_ALEX_RepairCode5_200601  set Use_flag = '1' where Code5= " &amp; id &amp; ""
+	set rs=server.createObject("adodb.recordset")
+	conn3.execute(SQL)
+
+	wid=Request("wid")
+	fid=Request("fid")
+	sid=Request("sid")
+	Use_flag = "1"
+	id=id &amp; "#" &amp; startpresaledate &amp; "#" &amp; startpresaletime &amp; "#" &amp; stoppresaledate &amp; "#" &amp; stoppresaletime &amp;"#" &amp; Use_flag
+	sql2= " insert into TB_GD_UserClick_Log_200507 (uid,username,companyid,webname,webid,funname,funid,subname,subid,ip_address,goods_name)  "
+	SQL2= SQL2 &amp; "values (" &amp;session("aid")&amp; ",'"&amp;session("cname")&amp;"','"&amp;session("companyid")&amp;"','產品管理',"&amp; wid &amp;",'票務中心',"&amp; fid &amp;", '業態管理',"&amp; sid &amp;",'"&amp;strIP&amp;"','"&amp;id&amp;"') "
+	conn.execute(SQL2)
+
+	if err&lt;&gt;0 then
+		&lt;script&gt;alert("修改失敗!"); history.go(-1);&lt;/script&gt;
+		response.end
+	else
+		&lt;script&gt;alert("修改成功!"); location.href='&lt;%=Session("url")%&gt;';&lt;/script&gt;
+	end if
+end if
+%&gt;
+</code></pre>
+
+<footer>本文件由 8 個 <code>2G_Tcode5*.asp</code> 檔案（Big5 編碼）解析整理產生。標示「未知」之處代表共用函式庫或外部檔案（<code>Tcode5stopmsg.asp</code>、<code>code4SetShortCode.asp</code>、<code>code4SetShortCode_2G.asp</code>、<code>2G_upload_code3.asp</code>、<code>TB_ALEX_MainTicket_200604</code>）未提供，改寫前建議一併取得。請同時參考 <code>code4_system_spec.html</code> 了解共同架構背景。</footer>
+
+</main>
+</div>
+</body>
+</html>
