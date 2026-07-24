@@ -85,6 +85,7 @@
   <button class="active" data-filter="all">📋 全部</button>
   <button data-filter="code1">🗂 項目管理</button>
   <button data-filter="code2">🧰 服務管理</button>
+  <button data-filter="code3">🏷 品牌管理</button>
 </div>
 
 <table id="catalog">
@@ -106,7 +107,7 @@
     <span class="zh-name">項目管理（Item / Code1）</span>
     最上層分類代碼管理：查詢列表、新增、編輯（限未啟用）、停用（檢查下層 Code2）、暫停服務公告。
   </td>
-  <td class="stat">8 個 ASP 檔<br>13 項已知缺陷</td>
+  <td class="stat">8 個 ASP 檔<br>12 項已知缺陷</td>
   <td class="links">
     <a href="code1_system_spec.html">📄 規格文件 (HTML)</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/code1_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
@@ -120,10 +121,24 @@
     <span class="zh-name">服務管理（Service / Code2）</span>
     Code1 底下第二層分類：查詢列表、新增、編輯（限未啟用）、停用（檢查下層 Code3）、暫停服務公告；含服務編號「99」互斥規則。
   </td>
-  <td class="stat">8 個 ASP 檔<br>13 項已知缺陷</td>
+  <td class="stat">8 個 ASP 檔<br>12 項已知缺陷</td>
   <td class="links">
     <a href="code2_system_spec.html">📄 規格文件 (HTML)</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/code2_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-24</td>
+</tr>
+<tr data-cat="code3">
+  <td class="idcell">03</td>
+  <td><span class="tag code2" style="background:var(--tag1-bg);color:var(--tag1-fg);">code3</span></td>
+  <td class="desc">
+    <span class="zh-name">品牌管理（Brand / Code3）</span>
+    Code2 底下第三層分類：查詢列表、新增、編輯（限未啟用）、停用（檢查下層商品明細）、暫停服務公告；實作完整度低於 code1/code2，含 1 支孤兒處理器檔案。
+  </td>
+  <td class="stat">9 個 ASP 檔（含1支孤兒）<br>10 項已知缺陷</td>
+  <td class="links">
+    <a href="code3_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/code3_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
   </td>
   <td class="meta">2026-07-24</td>
 </tr>

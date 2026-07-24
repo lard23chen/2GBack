@@ -385,7 +385,7 @@ select * from VW_RKM_1G_2G_MMKActionCode_202207 where actionid = '&lt;actionid&g
 <div>送出目標</div><div>POST → <code>code1stopmsg_db.asp</code></div>
 <div>前端驗證</div><div>訊息內容必填，且不可含特殊字元黑名單</div>
 </div>
-<div class="callout bad"><strong>本頁有一個程式缺陷（D-05）</strong>組 SQL 時變數名稱寫成大寫 <code>SQL="Select * From ... where ..."</code>，但實際執行查詢時卻寫的是 <code>conn0.Execute( sql )</code>（小寫 <code>sql</code>）。因為本檔案內從未賦值給小寫的 <code>sql</code> 變數，Classic ASP 對未賦值變數預設為空字串 <code>""</code>，等同執行 <code>conn0.Execute("")</code>。<b>實際行為需要以 IIS 上的真實執行結果驗證</b>（可能是直接丟出執行錯誤，或是靜默失敗、rsStop 維持某種未定義狀態），改寫時建議直接修正為使用 <code>SQL</code>（大寫）這個真正建構好的查詢字串，讓「讀取既有公告」邏輯能真正生效。</div>
+<div class="callout ok"><strong>易誤判為缺陷之處（已排除）</strong>本頁組字串用的是大寫變數 <code>SQL="Select * From ... where ..."</code>，但執行查詢時寫的是 <code>conn0.Execute( sql )</code>（小寫）。乍看像是「用到未賦值的不同變數」，但 <b>Classic ASP／VBScript 的變數名稱不分大小寫</b>，<code>SQL</code> 與 <code>sql</code> 實際是同一個變數、同一個記憶體位置，因此這裡的查詢會正常帶入組好的字串執行，<b>並非程式缺陷</b>。撰寫本文件時最初誤判此處為 bug（曾標記為 D-05），已於後續修訂中確認並更正，特此保留說明以避免其他人重蹈同樣的誤判。</div>
 
 <h3 id="p-code1stopmsg_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.8 code1stopmsg_db.asp — 暫停訊息寫入</h3>
 <div class="kv">
@@ -432,7 +432,8 @@ select * from VW_RKM_1G_2G_MMKActionCode_202207 where actionid = '&lt;actionid&g
 <tr><td>D-02</td><td><code>if err&lt;&gt;0 then ... else ...</code> 用於判斷資料庫操作是否成功，但程式中沒有 <code>On Error Resume Next</code>，發生錯誤時 ASP 會直接顯示例外頁面中斷執行，不會走到這個判斷；即使沒中斷，<code>Err</code> 物件也不會因為 <code>conn.execute</code> 失敗而被此處程式碼正確捕捉語意</td><td>「失敗」分支形同虛設，錯誤處理不可靠</td><td>code1add_db.asp、code1mod.asp、code1mod_stop.asp、code1stopmsg_db.asp</td></tr>
 <tr><td>D-03</td><td>狀態變更（新增/編輯/停用/暫停訊息）全部透過 GET 連結觸發跳轉到會寫資料的表單，且最終寫入雖是 POST，但「停用」這個動作在列表頁是直接用 <code>location.href</code>(GET) 帶參數跳轉到確認頁，確認頁表單再 POST，中間沒有 CSRF token 防護</td><td>缺乏 CSRF 防護；瀏覽器預抓取/重複點擊可能有非預期副作用</td><td>code1.asp 及各表單</td></tr>
 <tr><td>D-04</td><td>租戶（groupid/mid）與登入者身份完全由前端網址參數決定，程式未見任何「目前登入者是否真的屬於這個 mid」的驗證</td><td>越權存取風險（水平權限提升）</td><td>全部檔案</td></tr>
-<tr><td>D-05</td><td><code>code1stopmsg.asp</code> 第44-45行：組字串用變數 <code>SQL</code>（大寫），但執行查詢用的是 <code>sql</code>（小寫，未賦值），Classic ASP 中兩者是不同變數</td><td>讀取既有暫停公告的邏輯可能完全失效（永遠視為「找不到現有公告」）</td><td>code1stopmsg.asp 第44-45行</td></tr>
+<tr><td>D-05<br><span style="color:var(--muted);font-size:11px;">(已排除)</span></td><td><code>code1stopmsg.asp</code> 第44-45行組 <code>SQL</code>（大寫）、執行 <code>conn0.Execute( sql )</code>（小寫）——初次檢視時誤判為「用到未賦值變數」。經確認 <b>Classic ASP／VBScript 變數名稱不分大小寫</b>，<code>SQL</code> 與 <code>sql</code> 是同一變數，程式行為正確，<b>並非缺陷</b>。保留此列僅為記錄排查過程，避免日後重複誤判。</td><td>無（已確認非缺陷）</td><td>code1stopmsg.asp 第44-45行</td></tr>
+
 <tr><td>D-06</td><td><code>code1stopmsg_db.asp</code> 第108行 <code>conn0.execute(SQL)</code>（寫入異動記錄）被註解掉</td><td>暫停公告的異動稽核記錄實際上從未被寫入資料庫，儘管字串已組好</td><td>code1stopmsg_db.asp 第108行</td></tr>
 <tr><td>D-07</td><td>字元編碼為 Big5（Codepage 950），非 UTF-8</td><td>直接用 UTF-8 工具開啟會看到亂碼；改寫時目標系統若採 UTF-8，需在轉換階段確認所有中文字串正確轉碼（本文件已完成轉換供參考）</td><td>全部 8 個檔案</td></tr>
 <tr><td>D-08</td><td>Item_1 的「必須為數字」檢查（<code>checknumber</code>）在 <code>code1add.asp</code> 被註解掉，但在 <code>code1mod_temp.asp</code> 是啟用的</td><td>新增與編輯的輸入驗證規則不一致，可能讓新增頁存入非數字的 Item_1</td><td>code1add.asp 第91-92行 vs code1mod_temp.asp 第159-160行</td></tr>
@@ -481,7 +482,7 @@ select * from VW_RKM_1G_2G_MMKActionCode_202207 where actionid = '&lt;actionid&g
 <li><b>權限檢查前移：</b>groupId 應該從登入 session／JWT 取得並與路徑參數比對，而不是完全信任前端傳入。</li>
 <li><b>驗證規則集中化：</b>把黑名單特殊字元檢查、必填檢查、長度限制、Item_1 數字格式等，整理成一組可重用的 validation schema（例如 Zod/Yup/Bean Validation），前後端共用同一份規則描述。</li>
 <li><b>SP 相依性：</b><code>SP_GD_StopMsgWork_ONDB_201104</code> 的真正定義未知，若改寫成應用層邏輯，需要先取得 SP 原始定義，否則現有反推的參數順序只能當作暫時性假設。</li>
-<li><b>是否保留 D-05／D-06 的行為：</b>這兩個是明顯的程式錯誤（讀不到既有公告、稽核記錄未寫入）。建議在改寫時預設「修正」，但因為不確定舊系統上線這麼久是否已有依賴此錯誤行為的下游流程，建議先跟需求方確認再拍板。</li>
+<li><b>是否保留 D-06 的行為：</b>稽核記錄從未真正寫入是明顯的程式缺陷。建議在改寫時預設「修正」（真正寫入異動記錄），但因為不確定舊系統上線這麼久是否已有依賴此行為（例如某些下游流程依賴「不會產生記錄」）的情況，建議先跟需求方確認再拍板。（原先同時列出的 D-05 經確認並非缺陷，已排除，詳見第9章。）</li>
 </ul>
 
 <h2 id="appendix">12. 附錄：原始碼全文（Big5→UTF-8，內容未變更僅轉碼）</h2>

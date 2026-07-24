@@ -370,7 +370,7 @@ order by b.code1
 <div>讀取現有公告</div><div>
 <code>Select * From TB_GD_StopServiceMSG_201010 where code1='&lt;code1&gt;' and code2='&lt;Code2&gt;' and code3='0' and linklevel=1</code>
 </div>
-<div class="callout bad">程式缺陷（同 D-05，重複出現）</div><div>組字串時用大寫變數 <code>SQL</code>，執行查詢時卻寫 <code>conn0.Execute( sql )</code>（小寫，未賦值）——與 code1 模組 <code>code1stopmsg.asp</code> 完全相同的 bug，代表讀取「現有暫停公告」的邏輯同樣可能永遠失效（見 D2-07）。</div>
+<div class="callout ok">易誤判為缺陷之處（已排除，見 D2-07）：組字串用大寫變數 <code>SQL</code>，執行查詢時寫的是 <code>conn0.Execute( sql )</code>（小寫）。因為 <b>Classic ASP／VBScript 變數名稱不分大小寫</b>，<code>SQL</code> 與 <code>sql</code> 其實是同一個變數，此處查詢會正確執行，並非缺陷（code1 模組同構寫法亦已確認同樣不是缺陷）。</div>
 <div>唯讀欄位</div><div>系統編號、使用者編號、服務名稱、服務圖檔；<code>actionid</code> 這裡是從 <code>b.actionid</code>（業態代碼欄位）取得，之後隱藏帶入表單，供寫入時使用（<b>與 code2mod.asp 誤用 mid 當 actionid 不同，這裡的 actionid 才是真正的業態代碼</b>）</div>
 <div>啟用狀態顯示</div><div>三個 radio：<code>0</code>=啟用、<code>1</code>=停用（disabled）、<code>2</code>=待上架（disabled）——僅顯示用，不可在此頁修改；<code>2</code> 這個值在其他 code2 檔案中從未出現過，見 D2-11</div>
 <div>可編輯欄位</div><div>暫停訊息啟用/停止時間(日期+時+分)、顯示訊息(限25字)、暫停訊息狀態(StopUseFlag)——邏輯與 code1 模組的 <code>code1stopmsg.asp</code> 完全對稱</div>
@@ -418,7 +418,7 @@ order by b.code1
 <tr><td>D2-04</td><td><code>code2add_db.asp</code> 第8行 <code>response.write Item_2</code> 為除錯殘留程式碼，未被移除</td><td>頁面最上方會多輸出一段服務編號文字，屬視覺雜訊</td><td>code2add_db.asp 第8行</td></tr>
 <tr><td>D2-05</td><td><code>code2add_db.asp</code> 第9行單引號檢查誤寫成檢查 <code>Item_1</code>/<code>Item1_name</code>（本檔案從未定義的變數），應為 <code>Item_2</code>/<code>Item2_name</code></td><td>新增服務時的單引號防注入檢查完全失效（永遠通過）</td><td>code2add_db.asp 第9行</td></tr>
 <tr><td>D2-06</td><td><code>code2mod.asp</code> 第12/15行：把 <code>request("mid")</code>（groupid值）存入變數 <code>actionid</code>，並拿去比對 <code>b.actionid</code> 欄位；對照 <code>code2mod_stop.asp</code> 同樣的變數命名/賦值方式卻正確地比對 <code>b.groupid</code>，兩者行為不一致，其中一個必定有誤</td><td>編輯服務時的「重複且已啟用」防呆檢查可能因為比對錯欄位而失效或誤判</td><td>code2mod.asp 第12、15行</td></tr>
-<tr><td>D2-07</td><td><code>code2stopmsg.asp</code> 組字串用 <code>SQL</code>（大寫），執行查詢卻用 <code>sql</code>（小寫，未賦值）——與 code1 模組的 D-05 相同缺陷再次出現</td><td>讀取既有「服務層」暫停公告的邏輯可能完全失效</td><td>code2stopmsg.asp 第59-60行</td></tr>
+<tr><td>D2-07<br><span style="color:var(--muted);font-size:11px;">(已排除)</span></td><td><code>code2stopmsg.asp</code> 組字串用 <code>SQL</code>（大寫），執行查詢用 <code>sql</code>（小寫）——與 code1 模組同構寫法。因 <b>VBScript 變數名稱不分大小寫</b>，兩者是同一變數，<b>並非缺陷</b>（code1 規格文件的 D-05 已作相同更正）。</td><td>無（已確認非缺陷）</td><td>code2stopmsg.asp 第59-60行</td></tr>
 <tr><td>D2-08</td><td><code>code2mod_temp.asp</code> 與 <code>code2stopmsg.asp</code>：當所屬項目（Code1）已被停用導致 join 查無資料時，只顯示警告 alert，<b>沒有呼叫 <code>response.end</code></b> 就繼續執行後續讀取記錄欄位的程式碼，會在空的 Recordset 上出錯</td><td>父項目被停用後，嘗試編輯/設定其下服務的暫停訊息會直接遇到伺服器錯誤，而非停留在友善的警告訊息</td><td>code2mod_temp.asp 第41-48行；code2stopmsg.asp 第43-50行</td></tr>
 <tr><td>D2-09</td><td><code>code2stopmsg_db.asp</code> 稽核記錄寫入陳述式 <code>conn0.execute(SQL)</code> 被註解（與 code1 模組 D-06 相同缺陷）</td><td>暫停公告異動記錄從未真正寫入</td><td>code2stopmsg_db.asp 第106行</td></tr>
 <tr><td>D2-10</td><td><code>code2mod_temp.asp</code>／<code>code2stopmsg.asp</code> 的隱藏欄位 <code>&lt;input type="hidden" name="Item_1" value=&lt;%=code1%&gt;&gt;</code> 欄位名稱是 <code>Item_1</code> 但存放的其實是 <code>code1</code>（系統編號）</td><td>命名誤導，目前下游未真正使用此欄位值所以無立即影響，但改寫時不應沿用</td><td>code2mod_temp.asp 第67行；code2stopmsg.asp 第131行</td></tr>

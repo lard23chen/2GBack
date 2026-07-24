@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>code3 模組系統規格文件（供改寫參考）</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --warn-bg:#fff3e0; --warn-b:#f0b429;
+    --bad-bg:#fdecec; --bad-b:#e5484d; --ok-bg:#e8f7ee; --ok-b:#2f9e5b;
+    --nav-bg:#f7f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --warn-bg:#3a2e12; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-b:#b0454a; --ok-bg:#123321; --ok-b:#2f9e5b;
+      --nav-bg:#1a1d21;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+    line-height:1.7;
+  }
+  .layout{display:flex; min-height:100vh;}
+  nav.toc{
+    width:260px; flex:0 0 260px; background:var(--nav-bg); border-right:1px solid var(--border);
+    padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; font-size:13.5px;
+  }
+  nav.toc h2{font-size:14px; color:var(--muted); margin:0 0 10px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:2px 0;}
+  nav.toc a{color:var(--fg); text-decoration:none; display:block; padding:4px 8px; border-radius:6px;}
+  nav.toc a:hover{background:var(--code-bg); color:var(--accent);}
+  nav.toc .sub{padding-left:14px; font-size:12.5px; color:var(--muted);}
+  main{flex:1; padding:36px 48px; max-width:1000px;}
+  h1{font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:12px;}
+  h2{font-size:20px; margin-top:48px; border-left:5px solid var(--accent); padding-left:10px;}
+  h3{font-size:16px; margin-top:28px; color:var(--accent);}
+  h4{font-size:14.5px; margin-top:18px;}
+  p{max-width:860px;}
+  code{background:var(--code-bg); padding:2px 5px; border-radius:4px; font-size:0.92em;}
+  pre{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+    padding:14px; overflow-x:auto; font-size:12.8px; line-height:1.55;
+  }
+  pre code{background:none; padding:0;}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 45%, transparent);}
+  .badge{display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600;}
+  .b-page{background:var(--ok-bg); color:var(--ok-b); border:1px solid var(--ok-b);}
+  .b-handler{background:var(--warn-bg); color:var(--warn-b); border:1px solid var(--warn-b);}
+  .b-dead{background:var(--bad-bg); color:var(--bad-b); border:1px solid var(--bad-b);}
+  .callout{border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid var(--border);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-b);}
+  .callout.bad{background:var(--bad-bg); border-color:var(--bad-b);}
+  .callout.ok{background:var(--ok-bg); border-color:var(--ok-b);}
+  .callout strong{display:block; margin-bottom:4px;}
+  .flow{font-family:"Consolas",monospace; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:16px; white-space:pre; overflow-x:auto; font-size:13px;}
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:4px 12px; font-size:13.5px; margin:10px 0;}
+  .kv div:nth-child(odd){color:var(--muted);}
+  .file-anchor{scroll-margin-top:20px;}
+  hr{border:none; border-top:1px solid var(--border); margin:36px 0;}
+  .toc-h1{font-weight:700; margin-top:10px;}
+  footer{color:var(--muted); font-size:12px; margin-top:60px; border-top:1px solid var(--border); padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li class="toc-h1"><a href="#overview">1. 模組概觀</a></li>
+    <li class="toc-h1"><a href="#files">2. 檔案角色總覽</a></li>
+    <li class="toc-h1"><a href="#deps">3. 外部相依元件</a></li>
+    <li class="toc-h1"><a href="#arch">4. 架構重點</a></li>
+    <li class="toc-h1"><a href="#dataflow">5. 頁面流程圖</a></li>
+    <li class="toc-h1"><a href="#datamodel">6. 資料模型</a></li>
+    <li class="toc-h1"><a href="#pages">7. 逐頁詳細規格</a></li>
+    <li class="sub"><a href="#p-code3">7.1 code3.asp（列表）</a></li>
+    <li class="sub"><a href="#p-code3add">7.2 code3add.asp（新增表單）</a></li>
+    <li class="sub"><a href="#p-code3add_db">7.3 code3add_db.asp（新增寫入）</a></li>
+    <li class="sub"><a href="#p-code3mod_temp">7.4 code3mod_temp.asp（編輯/停用中繼）</a></li>
+    <li class="sub"><a href="#p-code3mod">7.5 code3mod.asp（更新寫入，實際使用中）</a></li>
+    <li class="sub"><a href="#p-code3mod_db">7.6 code3mod_db.asp（孤兒／未被引用的處理器）</a></li>
+    <li class="sub"><a href="#p-code3mod_stop">7.7 code3mod_stop.asp（停用寫入）</a></li>
+    <li class="sub"><a href="#p-code3stopmsg">7.8 code3stopmsg.asp（暫停訊息表單）</a></li>
+    <li class="sub"><a href="#p-code3stopmsg_db">7.9 code3stopmsg_db.asp（暫停訊息寫入）</a></li>
+    <li class="toc-h1"><a href="#rules">8. 商業規則彙整</a></li>
+    <li class="toc-h1"><a href="#defects">9. 已知問題／技術債</a></li>
+    <li class="toc-h1"><a href="#glossary">10. 術語對照表</a></li>
+    <li class="toc-h1"><a href="#rewrite">11. 改寫建議</a></li>
+    <li class="toc-h1"><a href="#appendix">12. 附錄：原始碼全文</a></li>
+  </ol>
+</nav>
+<main>
+
+<h1>code3 模組系統規格文件</h1>
+<p class="callout ok">
+<strong>文件目的</strong>
+本文件整理 <code>D:\2025\AI\2GBack</code> 資料夾下所有與 <code>code3</code>（品牌代碼管理）相關的 9 個 Classic ASP 程式。
+code3 是 code1／code2 模組再往下一層的資料，命名與程式風格延續同一系列，但<b>實作完整度明顯低於 code1、code2</b>——
+少了好幾項在兄弟模組中存在的防呆檢查，且其中一個處理器檔案經比對後被確認是「寫好了但沒有任何頁面會呼叫到」的孤兒程式。
+這些落差都已在文中明確標出，供 AI／工程師改寫成其他程式語言時判斷要不要在新系統中補回這些規則。
+</p>
+<p class="callout warn">
+<strong>本文件已修正的前次誤判</strong>
+在 code1／code2 規格文件的初版中，曾將「組字串用大寫變數 <code>SQL</code>、執行查詢卻寫小寫 <code>sql</code>」誤判為程式缺陷。
+經確認 <b>Classic ASP／VBScript 的變數名稱不分大小寫</b>，<code>SQL</code> 與 <code>sql</code> 其實是同一個變數，並非缺陷。
+code1、code2 的規格文件已同步更正；本文件（code3）在遇到相同寫法時，直接註明為「非缺陷」，不再重複誤判。
+</p>
+
+<h2 id="overview">1. 模組概觀</h2>
+<p>
+此模組中文名稱為「<b>品牌管理</b>」，管理的是「<b>品牌代碼（Code3）</b>」——是 code2 模組「服務代碼（Code2）」底下的次一層分類，
+也是目前所知代碼分層架構的第三層：
+</p>
+<div class="flow">TB_GD_RepairCode1_200501（項目, Code1）
+   └─ TB_GD_RepairCode2_200501（服務, Code2, FK→Code1）
+         └─ TB_GD_RepairCode3_200501（品牌, Code3, FK→Code1, FK→Code2)   ← 本模組管理的對象
+               └─ TB_GD_RepairDataList_200501（商品/明細, FK→Code1,Code2,Code3)   ← 只被本模組引用做「停用前檢查」，其 CRUD 邏輯不在此資料夾
+</div>
+<p>
+每一筆品牌代碼（Code3）同時關聯到 <code>code1</code> 與 <code>code2</code> 兩個外鍵（不像 code2 只需要一個 <code>code1</code> 外鍵），
+且查詢/編輯/暫停訊息等操作，都需要確認<b>整條父鏈（Code1 與 Code2）都必須是啟用中</b>才能進行，比 code2 模組多一層檢查。
+</p>
+<p>
+功能設計上延續 code1／code2 的四大操作：列表查詢、新增、編輯／停用、暫停服務公告，但實作深度不對稱：
+</p>
+<ul>
+  <li><b>新增（<code>code3add_db.asp</code>）完全沒有重複代碼檢查</b>，也沒有 code2 模組那種「99互斥」的伺服端驗證（只有前端確認對話框，沒有後端規則）。</li>
+  <li><b>編輯（<code>code3mod.asp</code>）沒有重複代碼檢查，也沒有租戶／父層範圍限制</b>——只用 <code>Code3</code> 這個 PK 去 UPDATE，語意上比 code1mod.asp／code2mod.asp 弱得多。</li>
+  <li>另外存在一個 <b>從未被任何頁面連結或表單指向的孤兒檔案 <code>code3mod_db.asp</code></b>，裡面反而寫了一條「父層服務必須啟用才能編輯品牌」的檢查，但因為沒有任何東西會呼叫它，這條規則實際上從未被執行。</li>
+</ul>
+
+<h2 id="files">2. 檔案角色總覽</h2>
+<table>
+<tr><th>檔名</th><th>角色</th><th>類型</th><th>用途一句話</th></tr>
+<tr><td><code>code3.asp</code></td><td>列表／查詢</td><td><span class="badge b-page">頁面</span></td><td>依 groupid 分頁列出品牌代碼，可依項目/服務/品牌編號/品牌名稱查詢；支援兩種導覽路徑模式（見 <code>flag</code> 參數）</td></tr>
+<tr><td><code>code3add.asp</code></td><td>新增表單</td><td><span class="badge b-page">頁面</span></td><td>顯示新增表單（項目→服務連動下拉、品牌編號、品牌名稱、圖片、啟用狀態）</td></tr>
+<tr><td><code>code3add_db.asp</code></td><td>新增寫入</td><td><span class="badge b-handler">處理器</span></td><td>驗證（僅單引號檢查，且對象變數錯誤）並 INSERT 新品牌，<b>沒有重複代碼檢查</b></td></tr>
+<tr><td><code>code3mod_temp.asp</code></td><td>編輯/停用中繼表單</td><td><span class="badge b-page">頁面</span></td><td>依 <code>mod</code> 參數切換「可編輯表單」或「停用確認表單」</td></tr>
+<tr><td><code>code3mod.asp</code></td><td>編輯寫入（實際使用中）</td><td><span class="badge b-handler">處理器</span></td><td>直接 UPDATE 品牌資料，<b>沒有任何重複檢查或範圍限制</b></td></tr>
+<tr><td><code>code3mod_db.asp</code></td><td>孤兒處理器（未被引用）</td><td><span class="badge b-dead">孤兒程式</span></td><td>本資料夾內沒有任何檔案的連結或表單指向它；內含「父層服務必須啟用」的檢查，但從未被執行到</td></tr>
+<tr><td><code>code3mod_stop.asp</code></td><td>停用寫入</td><td><span class="badge b-handler">處理器</span></td><td>檢查下層商品明細（<code>TB_GD_RepairDataList_200501</code>）無啟用中項目後，UPDATE Use_flag 為停用</td></tr>
+<tr><td><code>code3stopmsg.asp</code></td><td>暫停訊息表單</td><td><span class="badge b-page">頁面</span></td><td>顯示/建立單一品牌的「暫停服務公告」表單（LinkLevel=2）</td></tr>
+<tr><td><code>code3stopmsg_db.asp</code></td><td>暫停訊息寫入</td><td><span class="badge b-handler">處理器</span></td><td>驗證時間區間後，呼叫 Stored Procedure 新增/更新暫停公告</td></tr>
+</table>
+
+<h2 id="deps">3. 外部相依元件（不在本資料夾內，改寫時需另外確認）</h2>
+<table>
+<tr><th>include 路徑</th><th>被哪些檔案引用</th><th>推測用途</th></tr>
+<tr><td><code>../../../db/dbload.asp</code></td><td>全部 9 個檔案</td><td>建立資料庫連線物件 <code>conn</code>（租戶／主資料庫）與 <code>conn0</code>（共用／參考資料庫）</td></tr>
+<tr><td><code>../../../db/chk_session2.asp</code></td><td><code>code3add.asp</code>、<code>code3mod_temp.asp</code>、<code>code3stopmsg.asp</code></td><td>登入/Session 驗證；其餘 6 個檔案未引用（與 code1、code2 模組相同的省略模式）</td></tr>
+<tr><td><code>../../../calendar.asp</code></td><td><code>code3stopmsg.asp</code></td><td>提供 <code>YY_Calendar()</code> JS 彈出式日期選擇器</td></tr>
+<tr><td><code>../../../../system/rightmain.asp</code> 或 <code>../system/rightmain.asp</code>（未提供）</td><td><code>code3.asp</code>（查詢表單 action、分頁連結目標，路徑依 <code>flag</code> 參數二選一）</td><td>外層 frame 主頁；<b>本模組是唯一會因為 <code>flag</code> 參數而切換相對路徑深度的檔案</b>，code1.asp/code2.asp 都只用單一固定的 <code>rightmain.asp</code>（同層）</td></tr>
+<tr><td><code>upload_code1.asp</code>（未提供）</td><td><code>code3add.asp</code>、<code>code3mod_temp.asp</code></td><td>圖片上傳彈出視窗（與 code1、code2 模組共用同一支上傳程式）</td></tr>
+</table>
+
+<h2 id="arch">4. 架構重點</h2>
+<div class="kv">
+<div>雙資料庫連線</div><div><code>conn</code>：操作 <code>TB_GD_RepairCode1_200501</code>、<code>TB_GD_RepairCode2_200501</code>、<code>TB_GD_RepairCode3_200501</code>、<code>TB_GD_RepairDataList_200501</code>（皆為租戶資料）。<code>conn0</code>：操作 <code>TB_GD_StopServiceMSG_201010</code>、<code>TB_GD_StopServiceMsgLOG_201010</code>（共用／公告資料）。與 code1、code2 模組同一套雙連線慣例。</div>
+<div>雙外鍵、雙層父鏈檢查</div><div><code>TB_GD_RepairCode3_200501</code> 同時持有 <code>code1</code> 與 <code>code2</code> 兩個外鍵。查詢／編輯／暫停訊息頁面組 SQL 時固定三表 join（<code>a=Code3, b=Code2, c=Code1</code>），並要求 <code>b.use_flag=0 and c.use_flag=0</code>——也就是<b>祖父層（項目）與父層（服務）都必須啟用中</b>，比 code2 模組（只需檢查單一父層）多一層。</div>
+<div>雙重導覽路徑模式（<code>flag</code> 參數，code3 特有）</div><div>
+  <code>code3.asp</code> 內部依 <code>request("flag")="0"</code> 與否，切換兩套完全不同的連結／表單路徑：<br>
+  ・<code>flag="0"</code>：表單 action 用 <code>../../../../system/rightmain.asp</code>（多一層 <code>../</code>），其餘連結（新增/修改/停用/下拉連動）皆用<b>相對於當前目錄的檔名</b>（不加 <code>Session("folder")</code> 前綴）。<br>
+  ・<code>flag</code> 為其他值（含未帶此參數）：表單 action 用 <code>../system/rightmain.asp</code>，其餘連結都加上 <code>Session("folder")</code> 前綴。<br>
+  這代表 <code>code3.asp</code> 被設計成可以從<b>兩個不同的目錄深度／選單入口</b>掛載，但 code1.asp／code2.asp 完全沒有這種機制，只用固定路徑。改寫時必須先搞清楚實際上線環境是否真的用到 <code>flag=0</code> 這條路徑（例如另一個選單樹或子系統的入口），否則新系統可能會漏掉一種合法的進入方式。
+</div>
+<div>導覽狀態</div><div>沿用 code1／code2 模組同一套 <code>Session("folder")</code>、<code>Session("url")</code>／<code>Session("URL")</code>、<code>Session("Cname")</code>。</div>
+<div>狀態機（Use_flag）</div><div>Code3 本身：<code>0</code>=啟用、<code>1</code>=停用（與 code1、code2 相同語意）。但下一層 <code>TB_GD_RepairDataList_200501</code> 的停用前檢查用的是 <code>Use_flag&lt;&gt;1</code>（「不等於1」，而非「等於0」），暗示商品明細層的 Use_flag 可能存在第三種值（呼應 code2／code3 暫停訊息畫面上出現的「2=待上架」選項，見 code2 規格文件 D2-11）。</div>
+</div>
+
+<h2 id="dataflow">5. 頁面流程圖</h2>
+<div class="flow">code3.asp  (列表／查詢，入口頁；依 flag 參數切換路徑模式)
+ │  篩選條件：項目別下拉(排除item_1=99) → 連動服務名稱下拉 → 品牌名稱關鍵字
+ │
+ ├─[按鈕:新增代碼]──────────────► code3add.asp (新增表單；項目→服務連動下拉，皆用整頁 location.href 連動)
+ │                                     │ submit(POST)
+ │                                     ▼
+ │                              code3add_db.asp ──► （僅單引號檢查，且檢查對象變數錯誤，見D3-05）──► alert(成功/失敗) ──► redirect Session("url")
+ │                                     ⚠ 沒有任何重複代碼檢查（對照 code1/code2 模組的缺口，見 D3-03）
+ │
+ ├─[按鈕:修改]  (僅當該列 Use_flag=1 未啟用時顯示)
+ │      └────────► code3mod_temp.asp?mod=1 (可編輯表單；要求 Code1與Code2皆啟用中，否則只alert不中止，見D3-06)
+ │                        │ submit(POST)
+ │                        ▼
+ │                  code3mod.asp ──► 直接 UPDATE（無重複檢查、無範圍限制）──► alert(成功/失敗) ──► redirect Session("url")
+ │
+ │                  ※ 另有一支 code3mod_db.asp 孤兒檔案，內含「父層服務必須啟用」的檢查邏輯，
+ │                     但沒有任何表單/連結指向它，實際流程中永遠不會被呼叫（見 7.6 節、D3-04）
+ │
+ ├─[按鈕:停用]  (僅當該列 Use_flag=0 使用中時顯示)
+ │      └────────► code3mod_temp.asp?mod=2&Use_flag=1 (停用確認表單，欄位皆唯讀)
+ │                        │ submit(POST)
+ │                        ▼
+ │                  code3mod_stop.asp ──► 檢查下層商品明細(TB_GD_RepairDataList_200501)是否仍啟用中(Use_flag<>1)
+ │                                          ├─是──► alert(禁止停用) ──► redirect Session("url")
+ │                                          └─否──► UPDATE Use_flag ──► alert(成功/失敗) ──► redirect Session("url")
+ │
+ └─ code3mod_temp.asp 內另有按鈕[暫停訊息]
+            └────────► code3stopmsg.asp?Code3=..&Item_3=..&mid=..
+                              │ submit(POST)
+                              ▼
+                        code3stopmsg_db.asp ──► 驗證時間區間
+                                                  ├─不合法──► alert(錯誤) ──► history.go(-1)
+                                                  └─合法──► exec SP_GD_StopMsgWork_ONDB_201104 (LinkLevel=2，新增或更新)
+                                                              ──► alert(成功/失敗) ──► redirect Session("url")
+</div>
+
+<h2 id="datamodel">6. 資料模型</h2>
+<h3>6.1 資料表一覽</h3>
+<table>
+<tr><th>名稱</th><th>連線</th><th>性質</th><th>本模組操作方式</th></tr>
+<tr><td><code>TB_GD_RepairCode1_200501</code></td><td>conn</td><td>祖父層（項目代碼），詳見 code1 模組文件</td><td>僅 SELECT（join 取得 groupid/item1_name，及驗證是否啟用中）</td></tr>
+<tr><td><code>TB_GD_RepairCode2_200501</code></td><td>conn</td><td>父層（服務代碼），詳見 code2 模組文件</td><td>僅 SELECT（join 取得 item2_name，及驗證是否啟用中）</td></tr>
+<tr><td><code>TB_GD_RepairCode3_200501</code></td><td>conn</td><td>主檔（品牌代碼），本模組核心</td><td>SELECT / INSERT / UPDATE</td></tr>
+<tr><td><code>TB_GD_RepairDataList_200501</code></td><td>conn</td><td>子檔（商品／明細，第四層）</td><td>僅 SELECT（停用前檢查用，本身 CRUD 邏輯不在此資料夾）</td></tr>
+<tr><td><code>TB_GD_StopServiceMSG_201010</code></td><td>conn0</td><td>暫停服務公告訊息（與 code1、code2 模組共用同一張表）</td><td>SELECT（讀取現況）／透過 Stored Procedure 寫入</td></tr>
+<tr><td><code>TB_GD_StopServiceMsgLOG_201010</code></td><td>conn0</td><td>暫停公告異動記錄</td><td>程式碼存在但實際寫入被註解，目前未執行（與 code1、code2 模組相同缺陷）</td></tr>
+</table>
+
+<h3>6.2 欄位明細</h3>
+<h4><code>TB_GD_RepairCode3_200501</code>（品牌代碼主檔）</h4>
+<table>
+<tr><th>欄位</th><th>型態(推測)</th><th>說明</th></tr>
+<tr><td><code>Code3</code></td><td>int, PK</td><td>系統自動編號，供 <code>TB_GD_RepairDataList_200501</code> 及暫停公告表的 <code>Code3</code> 欄位關聯</td></tr>
+<tr><td><code>code1</code></td><td>int, FK</td><td>所屬項目（→ <code>TB_GD_RepairCode1_200501.Code1</code>）</td></tr>
+<tr><td><code>code2</code></td><td>int, FK</td><td>所屬服務（→ <code>TB_GD_RepairCode2_200501.Code2</code>）</td></tr>
+<tr><td><code>Item_3</code></td><td>varchar(2)</td><td>使用者自訂品牌編號，前端 maxlength=2；"99" 於前端有警告提示，但<b>沒有</b>像 code2 模組那樣的伺服端互斥檢查（見 8.4 節）</td></tr>
+<tr><td><code>Item3_name</code></td><td>varchar(15)</td><td>品牌名稱，前端 maxlength=15，不可含特殊字元黑名單</td></tr>
+<tr><td><code>Item3_pic</code> / <code>item3_pic</code></td><td>varchar</td><td>品牌圖示檔名，路徑慣例同 code1／code2（<code>itemlogo/&lt;檔名&gt;</code>）</td></tr>
+<tr><td><code>Use_flag</code></td><td>char/int</td><td>0=使用中／啟用，1=未啟用／停用，與 code1、code2 相同語意</td></tr>
+</table>
+<p>沒有 <code>groupid</code> 欄位（與 code2 模組相同模式），租戶範圍一律透過 join 到 <code>TB_GD_RepairCode1_200501.groupid</code> 間接取得。<b>唯一的例外是 <code>code3mod.asp</code> 這支實際在用的編輯處理器完全沒有做這個 join</b>（見 D3-05），代表它的 UPDATE 陳述式沒有任何租戶範圍限制。</p>
+
+<h4><code>TB_GD_RepairDataList_200501</code>（商品／明細，僅供關聯檢查）</h4>
+<table>
+<tr><th>欄位</th><th>說明</th></tr>
+<tr><td><code>code1</code></td><td>對應 <code>TB_GD_RepairCode1_200501.Code1</code></td></tr>
+<tr><td><code>code2</code></td><td>對應 <code>TB_GD_RepairCode2_200501.Code2</code></td></tr>
+<tr><td><code>code3</code></td><td>對應 <code>TB_GD_RepairCode3_200501.Code3</code></td></tr>
+<tr><td><code>Use_flag</code></td><td>停用檢查條件用的是 <code>Use_flag&lt;&gt;1</code>（非 <code>=0</code>），暗示此表的 Use_flag 可能不是單純二元值</td></tr>
+</table>
+<p><b>規則：</b>停用一個 Code3 品牌前，必須確認底下沒有任何「非停用」（<code>Use_flag&lt;&gt;1</code>）的商品明細，否則禁止停用（與 code1／code2 模組「停用前檢查下一層」的規則同構，但判斷條件從「等於0」換成「不等於1」，語意上略有差異，見第9章 D3-08）。</p>
+
+<h4><code>TB_GD_StopServiceMSG_201010</code> 在本模組的用法差異</h4>
+<p>資料表結構與 code1、code2 模組使用的完全相同，差異僅在於本模組固定使用：</p>
+<pre><code>Code1     = 該品牌所屬的項目代碼
+Code2     = 該品牌所屬的服務代碼
+Code3     = 該品牌本身的 Code3
+Code4     = '0'（固定，代表本模組不處理商品層公告；由此可反推此表其實還有 Code4 欄位，供未來第四層[商品]使用）
+LinkLevel = 2（固定，代表這是「品牌層級」的公告；對照 code1 的 LinkLevel=0[項目層]、code2 的 LinkLevel=1[服務層]）
+</code></pre>
+<p>EndDate 的 <b>+1天／-1天</b> 儲存慣例與 code1、code2 模組完全相同，改寫時需同樣還原。</p>
+
+<h3>6.3 Stored Procedure：<code>SP_GD_StopMsgWork_ONDB_201104</code>（品牌層呼叫方式）</h3>
+<pre><code>-- 新增（STOPMSGID = "0" 時）
+exec SP_GD_StopMsgWork_ONDB_201104
+     'A',
+     &lt;actionid&gt;,
+     &lt;code1&gt;,
+     &lt;code2&gt;,
+     &lt;code3&gt;,             -- 注意：這裡是實際的 Code3 值，對照 code1 固定傳'0'、code2 傳實際 Code2 值
+     '0','0','',          -- 用途未知，固定傳入
+     '2',                 -- 對照 code1 這個位置固定傳'0'、code2 固定傳'1'，本模組固定傳'2' —— 三個模組的數值恰好對應 LinkLevel(0/1/2)，
+                           --   進一步佐證這個參數位置就是 SP 內部設定 LinkLevel 欄位用的
+     &lt;msgdata&gt;, &lt;begindate&gt;, &lt;enddate&gt;(已+1天), &lt;begintime&gt;, &lt;endtime&gt;, &lt;stopUseFlag&gt;,
+     '0', &lt;Session("Cname")&gt;, ''
+-- 更新時 Mode='U'，其餘同構，倒數第三參數改傳既有 STOPMSGID
+</code></pre>
+<p class="callout warn">仍然建議在改寫前向 DBA 取得 SP 的真正定義，此處參數順序純粹是三個模組交叉比對後的推論。</p>
+
+<h2 id="pages">7. 逐頁詳細規格</h2>
+
+<h3 id="p-code3" class="file-anchor"><span class="badge b-page">頁面</span> 7.1 code3.asp — 品牌列表／查詢</h3>
+<div class="kv">
+<div>輸入參數</div><div><code>mid</code>（groupid，必要）、<code>page</code>、<code>flag</code>（切換路徑模式，見第4章）、<code>Item_1</code>（項目下拉）、<code>Item_2</code>（服務下拉，隨 Item_1 連動）、<code>Item_3</code>（品牌編號，未在畫面實際提供輸入框，僅 SQL 條件保留）、<code>Item3_name</code>（品牌名稱，模糊比對）、<code>wid</code>/<code>fid</code>/<code>sid</code></div>
+<div>資料來源</div><div><code>conn</code>: <code>TB_GD_RepairCode3_200501 a</code> join <code>TB_GD_RepairCode2_200501 b</code>（on a.code2=b.code2）join <code>TB_GD_RepairCode1_200501 c</code>（on a.code1=c.code1 and b.code1=c.code1），固定條件 <code>b.use_flag=0 and c.use_flag=0 and c.groupid=mid</code></div>
+<div>連動下拉</div><div>
+項目下拉：<code>select * from TB_GD_RepairCode1_200501 where item_1&lt;&gt;'99' and use_flag=0 and groupid=&lt;mid&gt; order by Item1_name</code><br>
+服務下拉：依是否已選項目分兩種 SQL——已選：<code>select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.code1=&lt;item_1&gt; and a.use_flag=0 and b.groupid=&lt;mid&gt;</code>；未選：同樣但不加 <code>a.code1=</code> 條件。<b>兩者皆有一行被註解掉的替代寫法，改成比對 <code>b.actionid</code> 而非 <code>b.groupid</code></b>——這與 code2 模組 D2-06 缺陷高度相關：本檔案的作者顯然也曾經在 groupid／actionid 之間猶豫，最終選擇保留正確的 groupid 版本並註解掉 actionid 版本，可視為佐證 code2mod.asp 那處應該也是筆誤。<br>
+兩個下拉都用 <code>onchange="location.href=...'"</code> 觸發整頁重新載入來實現連動效果，並非 AJAX。
+</div>
+<div>顯示規則</div><div>與 code1、code2 對稱：<code>Use_flag="0"</code>→「使用中」+右側【停用】按鈕；否則「未啟用」+左側【修改】按鈕</div>
+<div>雙路徑模式</div><div>依 <code>flag</code> 參數，查詢表單 action、分頁連結、新增/修改/停用連結，會在「不加 <code>Session("folder")</code> 前綴的相對路徑」與「加前綴的路徑」之間切換，詳見第4章</div>
+</div>
+
+<h3 id="p-code3add" class="file-anchor"><span class="badge b-page">頁面</span> 7.2 code3add.asp — 新增表單</h3>
+<div class="kv">
+<div>輸入參數</div><div><code>mid</code>、<code>code1</code>（GET，用於連動出服務下拉；<b>此表單同樣沒有 <code>mid</code> 的隱藏欄位</b>，與 code2add.asp 同一種缺口，見 D3-02）</div>
+<div>表單欄位</div><div><code>code1</code>(下拉,onchange連動整頁重載)、<code>code2</code>(下拉,依code1篩選)、<code>Item_3</code>(text,maxlength2)、<code>Item3_name</code>(text,maxlength15)、<code>logo</code>(隱藏)、<code>Use_flag</code>(radio,預設停用)</div>
+<div>下拉來源</div><div>項目：<code>select code1,item1_name from TB_GD_RepairCode1_200501 where use_flag=0 and item_1&lt;&gt;'99' and groupid=&lt;mid&gt; order by code1</code>；服務：<code>select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.use_flag=0 and b.groupid=&lt;mid&gt; [and a.code1=&lt;code1&gt;]</code></div>
+<div>送出目標</div><div>POST → <code>code3add_db.asp</code></div>
+<div>前端驗證</div><div>必填 code1、Item_3、Item3_name；Item3_name 特殊字元黑名單；Item_3="99" 確認對話框（僅提示）；<code>checknumber</code> 同樣被註解未執行</div>
+</div>
+
+<h3 id="p-code3add_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.3 code3add_db.asp — 新增寫入</h3>
+<div class="kv">
+<div>輸入參數(POST)</div><div><code>code1</code>、<code>code2</code>、<code>Item_3</code>、<code>Item3_name</code>、<code>logo</code>(→item3_pic)、<code>use_flag</code></div>
+<div class="callout bad">程式缺陷（D3-01）：單引號檢查對象變數錯誤</div><div>第10行檢查的是 <code>Instr(Item_1,"'")</code> 與 <code>Instr(Item1_name,"'")</code>——本檔案從未賦值這兩個變數，正確應為 <code>Item_3</code>／<code>Item3_name</code>。與 code2add_db.asp 的 D2-05 是完全相同類型的缺陷（很可能是同一個人複製 code1add_db.asp 或 code2add_db.asp 的檢查程式碼時忘記改變數名稱）。此檢查<b>形同虛設，永遠通過</b>。</div>
+<div class="callout bad">功能缺口（D3-03，重要）：完全沒有重複代碼檢查</div><div>對照 <code>code1add_db.asp</code>（檢查同 groupid 下 Item_1 是否已有啟用中的重複）與 <code>code2add_db.asp</code>（檢查同 code1 下 Item_2 是否重複，外加 99 互斥規則），<code>code3add_db.asp</code> 拿到表單資料後，<b>沒有做任何查重複的 SELECT</b>，直接組 INSERT 語句寫入。也沒有 code2 模組那套「99編號互斥」的伺服端規則（雖然前端表單仍有確認對話框提示使用者）。這代表理論上可以在同一個 code1+code2 底下新增出兩筆相同 <code>Item_3</code> 且都啟用中的品牌，這在 code1／code2 模組是被明確禁止的行為。</div>
+<div>SQL(INSERT)</div><div><code>Insert Into TB_GD_RepairCode3_200501 (code1, code2, Item_3, Item3_name, Item3_pic, use_flag) Values (&lt;code1&gt;,&lt;code2&gt;,'&lt;Item_3&gt;','&lt;Item3_name&gt;','&lt;item3_pic&gt;',&lt;use_flag&gt;)</code></div>
+<div>結果處理</div><div>成功 → alert「新增成功!」→ 導回 <code>Session("url")</code>；失敗分支同樣不會被實際觸發（<code>err&lt;&gt;0</code> 判斷失效，同 D-02 類缺陷）</div>
+</div>
+
+<h3 id="p-code3mod_temp" class="file-anchor"><span class="badge b-page">頁面</span> 7.4 code3mod_temp.asp — 編輯／停用中繼表單</h3>
+<div class="kv">
+<div>輸入參數</div><div><code>Code3</code>(必要)、<code>mod</code>(1=編輯／2=停用)、<code>Use_flag</code>(mod=2時固定"1")、<code>mid</code></div>
+<div>資料讀取</div><div><code>select a.*, b.item_2, c.item_1, b.item2_name, c.item1_name from TB_GD_RepairCode3_200501 a, TB_GD_RepairCode2_200501 b, TB_GD_RepairCode1_200501 c where a.code1=c.code1 and a.code2=b.code2 and b.code1=c.code1 and b.use_flag=0 and c.use_flag=0 and a.code3=&lt;Code3&gt; and c.groupid=&lt;mid&gt;</code>（要求祖父層與父層都必須啟用中）</div>
+<div class="callout bad">程式缺陷（D3-06，與 code2 模組 D2-08 同類）</div><div>若查無資料（父鏈中有一層已停用），只 alert「欲修改此品牌請將此服務管理狀態改為啟用!」，<b>沒有 <code>response.end</code></b>，後續讀取 <code>rsring("Item1_name")</code> 等欄位會在空 Recordset 上出錯，導致伺服器錯誤而非停在警告訊息。</div>
+<div>模式分支</div><div>mod=1（編輯）：<code>Item_3</code>/<code>Item3_name</code> 可編輯，圖片可重傳，<code>Use_flag</code> radio 可改，表單 action=<code>code3mod.asp</code>；mod=2（停用）：全唯讀，表單 action=<code>code3mod_stop.asp</code></div>
+<div>額外入口</div><div>【暫停訊息】→ <code>code3stopmsg.asp?Code3=&lt;id&gt;&Item_3=&lt;Item_3&gt;&mid=&lt;mid&gt;&wid=..&fid=..&sid=..</code></div>
+<div>前端驗證(編輯模式)</div><div>必填 Item_3/Item3_name；Item_3 數字格式（有執行，跟 code3add.asp 不一致，同 code1/code2 模組的 D-08/等價模式）；Item3_name 黑名單；Item_3="99" 確認對話框</div>
+</div>
+
+<h3 id="p-code3mod" class="file-anchor"><span class="badge b-handler">處理器</span> 7.5 code3mod.asp — 編輯寫入（實際會被呼叫的那一支）</h3>
+<div class="kv">
+<div>輸入參數(POST)</div><div><code>code3</code>、<code>Item3_name</code>、<code>code1</code>(→item_1，讀入未使用)、<code>code2</code>(→item_2，讀入未使用)、<code>item_3</code>(讀入未使用，實際更新用的是下方直接取自表單的 <code>Item_3</code>)、<code>logo</code>(→item3_pic)、<code>Use_flag</code>、<code>mid</code>(→actionid，讀入未使用)</div>
+<div class="callout bad">功能缺口（D3-05，重要）：沒有任何重複檢查、沒有任何範圍限制</div><div>
+本檔案讀入一堆變數（<code>item_1</code>、<code>item_2</code>、<code>actionid</code>）之後<b>完全沒有使用它們做任何檢查</b>，直接組出：
+<pre><code>Update TB_GD_RepairCode3_200501 set
+  Item_3 = '&lt;Item_3&gt;',
+  Item3_name = '&lt;Item3_name&gt;',
+  Item3_pic = '&lt;Item3_pic&gt;',
+  Use_flag = &lt;Use_flag&gt;
+where Code3 = &lt;id&gt;
+</code></pre>
+對照 <code>code1mod.asp</code>（有查重複啟用中同編號）與 <code>code2mod.asp</code>（有查重複+99互斥，雖然 code2 那邊比對欄位本身有 D2-06 缺陷），<code>code3mod.asp</code> 是三個模組中<b>唯一完全沒有查重複、也沒有任何 groupid／租戶範圍限制</b>的編輯處理器——只要知道任何一個 <code>Code3</code> 值，理論上就能把它改成任意內容，不會檢查這個 Code3 是否真的屬於當前操作者的租戶（<code>mid</code>）。改寫時應視為需要補強的重大缺口，而非直接照抄的既有行為。
+</div>
+<div>結果處理</div><div>成功/失敗 alert 後導回 <code>Session("url")</code>；失敗分支同樣不會被實際觸發</div>
+</div>
+
+<h3 id="p-code3mod_db" class="file-anchor"><span class="badge b-dead">孤兒程式</span> 7.6 code3mod_db.asp — 未被任何頁面引用的處理器</h3>
+<div class="callout bad">
+<strong>確認為孤兒程式（D3-04，重要發現）</strong>
+在本資料夾其餘 8 個 code3 檔案中，搜尋不到任何一處 <code>&lt;form action="code3mod_db.asp"&gt;</code> 或 <code>location.href='...code3mod_db.asp...'</code> 的引用。
+<code>code3mod_temp.asp</code> 的表單 action 只會指向 <code>code3mod.asp</code>（mod=1）或 <code>code3mod_stop.asp</code>（mod=2），從未指向 <code>code3mod_db.asp</code>。
+這代表此檔案<b>在目前的檔案集合中無法被觸發</b>，除非有其他不在本資料夾內的頁面（例如舊版列表頁 <code>code3.asp</code> 若曾經有過內嵌編輯表單）仍在連結它。
+</div>
+<div class="kv">
+<div>推測用途（若曾被使用）</div><div>從程式內容看，它預期接收<b>帶有 <code>&lt;id&gt;</code> 尾碼的表單欄位</b>（例如 <code>Item3_name&lt;id&gt;</code>、<code>item_1&lt;id&gt;</code>、<code>Use_flag&lt;id&gt;</code>），這種命名模式常見於「列表頁裡每一列都是一個小表單、可以直接在列表上就地編輯」的舊設計（可對照 code1.asp／code2.asp 列表頁裡確實還留著 <code>Item_1&lt;id&gt;</code> 這類隱藏欄位）。目前的 <code>code3.asp</code> 列表頁已經沒有讓使用者直接在列表上編輯品牌名稱／狀態的輸入框了，只剩下【修改】按鈕導向 <code>code3mod_temp.asp</code> 這條路線，因此合理推測 <code>code3mod_db.asp</code> 是<b>舊版就地編輯功能被拿掉後留下的殘骸</b>。</div>
+<div>內含的業務規則（目前未被執行）</div><div>
+若 <code>Use_flag&lt;&gt;"1"</code>（欲設為啟用）：檢查 <code>select * from TB_GD_RepairCode2_200501 where Item_2=&lt;item_2&gt; and code1=&lt;item_1&gt; and Use_flag=&lt;Use_flag&gt;</code>；若為停用則改用不篩 Use_flag 的版本。若查無結果 → alert「此服務使用狀態為停止,無法開啟此品牌!」並拒絕更新。<br>
+<b>這是「品牌的父層服務必須啟用才能操作品牌」規則在 code3mod.asp／code3mod_temp.asp 之外唯一存在的伺服端強制版本</b>——但因為這支檔案是孤兒，這條規則實際上從未真正被強制執行於「編輯」這個動作上（<code>code3mod_temp.asp</code> 讀取階段雖然也做了類似檢查，但如 D3-06 所述，檢查失敗時並未真正中止執行）。
+</div>
+<div>SQL(UPDATE，若被呼叫)</div><div><code>Update TB_GD_RepairCode3_200501 set Item3_name='&lt;Item3_name&gt;', Item3_pic='&lt;Item3_pic&gt;', Use_flag=&lt;Use_flag&gt; where Code3=&lt;id&gt;</code>（注意：<b>不會更新 <code>Item_3</code></b>，與 <code>code3mod.asp</code> 會更新 <code>Item_3</code> 不同）</div>
+</div>
+<p class="callout warn"><strong>改寫建議</strong>由於這是唯一在原始碼中出現過、但已確認不會被觸發的檔案，改寫前務必和熟悉舊系統的人確認：(1) 是否有本資料夾之外的頁面仍會連結到它；(2) 它內含的「父層服務必須啟用」規則是否應該補回真正在用的 <code>code3mod.asp</code>／<code>code3mod_temp.asp</code> 流程中。不建議在新系統中原樣搬移這支檔案的邏輯而不做上述確認，否則等於複製了一段沒人知道還需不需要的規則。</p>
+
+<h3 id="p-code3mod_stop" class="file-anchor"><span class="badge b-handler">處理器</span> 7.7 code3mod_stop.asp — 停用寫入</h3>
+<div class="kv">
+<div>輸入參數(POST)</div><div><code>Code3</code>、<code>Item_2</code>(存入 code2 概念但變數名稱是 Item_2)、<code>item_1</code>(→code1)、<code>item_3</code>(讀入未使用)、<code>Use_flag</code>(固定"1")、<code>mid</code>(→actionid)</div>
+<div>前置檢查</div><div>
+<code>select * from TB_GD_RepairDataList_200501 a, TB_GD_RepairCode1_200501 b where a.code2=&lt;Item_2&gt; and a.code1=&lt;item_1&gt; and a.code3=&lt;Code3&gt; and a.Use_flag&lt;&gt;1 and a.code1=b.code1 and b.groupid=&lt;actionid&gt;</code>
+若查到底下有「非停用」（<code>Use_flag&lt;&gt;1</code>）的商品明細 → alert「此品牌於商品管理已啟用無法停用!\n若要停用請先停用此品牌的商品」並導回，不執行停用
+</div>
+<div>SQL(UPDATE)</div><div>檢查通過才執行：<code>Update TB_GD_RepairCode3_200501 set Use_flag=&lt;Use_flag&gt; where Code3=&lt;Code3&gt;</code></div>
+<div>結果處理</div><div>同前述模式：成功/失敗 alert 後導回 <code>Session("url")</code></div>
+</div>
+
+<h3 id="p-code3stopmsg" class="file-anchor"><span class="badge b-page">頁面</span> 7.8 code3stopmsg.asp — 暫停訊息表單</h3>
+<div class="kv">
+<div>輸入參數</div><div><code>Code3</code>、<code>Item_3</code>、<code>mid</code>、<code>wid</code>/<code>fid</code>/<code>sid</code></div>
+<div>讀取品牌資料</div><div>三表 join，要求 <code>b.use_flag=0 and c.use_flag=0</code>（父鏈需啟用），額外多取 <code>c.actionid</code>（真正的業態代碼，之後隱藏帶入表單）</div>
+<div class="callout bad">程式缺陷（同 D3-06）</div><div>查無資料時同樣只 alert 沒有 <code>response.end</code>，行為與 code3mod_temp.asp 相同缺陷。</div>
+<div>讀取現有公告</div><div><code>Select * From TB_GD_StopServiceMSG_201010 where code1='&lt;code1&gt;' and code2='&lt;code2&gt;' and code3='&lt;Code3&gt;' and code4='0' and linklevel=2</code></div>
+<div class="callout ok">易誤判為缺陷之處（已排除）：組字串用大寫 <code>SQL</code>，執行查詢寫小寫 <code>sql</code>——與 code1／code2 模組同構寫法，<b>VBScript 變數名稱不分大小寫</b>，兩者是同一變數，並非缺陷（詳見文件開頭說明）。</div>
+<div>啟用狀態顯示</div><div>與 code2stopmsg.asp 相同，三個 radio：0=啟用、1=停用（disabled）、2=待上架（disabled）——僅顯示用</div>
+<div>可編輯欄位／送出目標</div><div>與 code1／code2 模組的暫停訊息表單完全對稱：時間區間、25字訊息、StopUseFlag；POST → <code>code3stopmsg_db.asp</code></div>
+</div>
+
+<h3 id="p-code3stopmsg_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.9 code3stopmsg_db.asp — 暫停訊息寫入</h3>
+<div class="kv">
+<div>輸入參數(POST)</div><div><code>Code2</code>(→code2，注意欄位名稱是Code2但語意用途等同其他模組的主鍵讀取)、<code>Item2_name</code>(未使用)、<code>StopUseFlag</code>、<code>code1</code>、<code>actionid</code>、<code>code3</code>、<code>begindate</code>系列、<code>enddate</code>系列、<code>msgdata</code>、<code>STOPMSGID</code>、<code>wid</code>/<code>fid</code>/<code>sid</code>(未使用)</div>
+<div>時間處理與驗證邏輯</div><div>與 code1stopmsg_db.asp／code2stopmsg_db.asp 完全相同（enddate+1天、三個時間合理性檢查，僅當 stopUseFlag="1" 才檢查）</div>
+<div>寫入邏輯</div><div>
+  <code>STOPMSGID="0"</code>（新建）→ 呼叫 <code>SP_GD_StopMsgWork_ONDB_201104</code> Mode='A'，<code>Code3</code> 傳真實值、疑似 LinkLevel 位置固定傳 <code>'2'</code>；之後反查新 <code>STOPMSGID</code>（條件含 <code>linklevel=2</code>）<br>
+  否則 → Mode='U'，帶入既有 <code>STOPMSGID</code>
+</div>
+<div>稽核記錄</div><div>同 code1、code2 模組：組好 <code>INSERT INTO TB_GD_StopServiceMsgLOG_201010</code> 字串，但實際執行陳述式被註解，未真正寫入（D3-07）</div>
+<div>結果處理</div><div>成功 → alert「修改成功!」→ 導回 <code>Session("url")</code>；失敗分支同樣不會被實際觸發</div>
+</div>
+
+<h2 id="rules">8. 商業規則彙整（改寫時的核心行為清單）</h2>
+<ol>
+<li><b>租戶隔離（間接、且不完整）：</b>Code3 本身無 groupid，租戶範圍需透過 join 到 Code1 取得；但實際在用的編輯處理器 <code>code3mod.asp</code> <b>完全沒有做這個檢查</b>（見 D3-05），是本模組最大的規則缺口。</li>
+<li><b>雙層父鏈必須啟用：</b>列表查詢、編輯、暫停訊息設定，都要求所屬 Code1（項目）與 Code2（服務）都必須 <code>use_flag=0</code>；任一層被停用，都會擋住品牌的編輯與暫停訊息設定（但同 D3-06 所述，擋法有缺陷：只顯示警告不會真的中止）。</li>
+<li><b>停用品牌不檢查父鏈狀態：</b><code>code3mod_stop.asp</code> 本身沒有檢查 Code1／Code2 是否啟用，只檢查下層商品明細，與 code2 模組「停用不檢查父層」的不對稱設計一致。</li>
+<li><b>Use_flag 語意：</b>Code3 本身 0=啟用、1=停用；但下一層商品明細用 <code>Use_flag&lt;&gt;1</code> 判斷「非停用」，語意上比單純二元判斷更寬鬆（可能允許某種第三態，如「待上架」）。</li>
+<li><b>編輯僅限未啟用品牌；停用僅限啟用中品牌：</b>與 code1、code2 模組相同的互斥顯示規則（僅列表頁 UI 層面）。</li>
+<li><b>新增時無重複代碼檢查（本模組特有的缺口）：</b>與 code1、code2 模組明確禁止「同範圍內重複啟用中代碼」不同，code3 的新增（<code>code3add_db.asp</code>）沒有實作對等的檢查。若改寫時要與 code1／code2 行為一致，需要額外補上。</li>
+<li><b>編輯時無重複代碼檢查（本模組特有的缺口）：</b>同上，<code>code3mod.asp</code> 也沒有實作。</li>
+<li><b>品牌編號 "99" 目前只是前端提示，非強制規則：</b>與 code2 模組「99 與其他啟用中代碼互斥」的伺服端強制規則不同，code3 只有前端 <code>confirm()</code> 對話框告知「品牌編號99於前台不顯示」，使用者仍可直接送出，沒有任何伺服端阻擋機制。</li>
+<li><b>停用前檢查下一層：</b>停用 Code3 前必須確認底下沒有「非停用」的商品明細（<code>TB_GD_RepairDataList_200501.Use_flag&lt;&gt;1</code>），否則拒絕（與 code1／code2 模組「停用前檢查下一層」規則同構）。</li>
+<li><b>暫停公告固定層級：</b>本模組建立/編輯的暫停公告固定 <code>Code4='0'</code>，<code>LinkLevel=2</code>（品牌層級）。</li>
+<li><b>暫停公告日期慣例與時間合理性檢查：</b>與 code1、code2 模組完全相同。</li>
+</ol>
+
+<h2 id="defects">9. 已知問題／技術債（code3 特有或與 code1／code2 模組共通）</h2>
+<table>
+<tr><th>編號</th><th>問題</th><th>影響</th><th>出現位置</th></tr>
+<tr><td>D3-01</td><td><code>code3add_db.asp</code> 第10行單引號檢查誤寫成檢查 <code>Item_1</code>/<code>Item1_name</code>（本檔案從未定義的變數），應為 <code>Item_3</code>/<code>Item3_name</code>——與 code2add_db.asp 的 D2-05 是同一種複製貼上失誤</td><td>新增品牌時的單引號防注入檢查完全失效</td><td>code3add_db.asp 第10行</td></tr>
+<tr><td>D3-02</td><td><code>code3add.asp</code> 的表單完全沒有 <code>mid</code> 的隱藏欄位，與 code2add.asp 的 D2-03 同一種缺口</td><td>目前無實際功能影響（groupid 透過選定的 code1 間接取得）</td><td>code3add.asp（整份表單）</td></tr>
+<tr><td>D3-03</td><td><code>code3add_db.asp</code> 完全沒有實作「同範圍內重複啟用中代碼」的檢查，是三個模組中唯一缺少此規則的新增處理器</td><td>可能造成同一 code1+code2 底下出現兩筆相同 Item_3 且都啟用中的品牌，這在 code1／code2 模組是被禁止的</td><td>code3add_db.asp（整份檔案）</td></tr>
+<tr><td>D3-04</td><td><code>code3mod_db.asp</code> 是孤兒程式，本資料夾內沒有任何連結或表單指向它；內含「父層服務必須啟用才能編輯品牌」的規則，但因孤兒狀態從未被執行</td><td>該條規則實質上不存在於目前可達的程式路徑中；改寫前需確認是否有資料夾外的頁面仍連結它</td><td>code3mod_db.asp（整份檔案）</td></tr>
+<tr><td>D3-05</td><td><code>code3mod.asp</code>（實際在用的編輯處理器）沒有任何重複檢查，也沒有 groupid／租戶範圍限制，UPDATE 只用 <code>Code3</code> 這個 PK 篩選</td><td>理論上任何人只要知道 Code3 值就能修改該品牌資料，不受租戶邊界限制；也可能造成重複啟用中代碼</td><td>code3mod.asp（整份檔案）</td></tr>
+<tr><td>D3-06</td><td><code>code3mod_temp.asp</code> 與 <code>code3stopmsg.asp</code>：父鏈（Code1或Code2）未啟用導致 join 查無資料時，只顯示警告 alert，沒有 <code>response.end</code> 就繼續執行後續讀取記錄欄位的程式碼，會在空的 Recordset 上出錯——與 code2 模組 D2-08 同一類缺陷</td><td>父鏈任一層被停用後，嘗試編輯/設定其下品牌的暫停訊息會直接遇到伺服器錯誤</td><td>code3mod_temp.asp 第43-51行；code3stopmsg.asp 第44-51行</td></tr>
+<tr><td>D3-07</td><td><code>code3stopmsg_db.asp</code> 稽核記錄寫入陳述式 <code>conn0.execute(SQL)</code> 被註解（與 code1/code2 模組相同缺陷）</td><td>暫停公告異動記錄從未真正寫入</td><td>code3stopmsg_db.asp 第107行</td></tr>
+<tr><td>D3-08</td><td><code>code3mod_stop.asp</code> 停用前檢查用 <code>a.Use_flag&lt;&gt;1</code>（不等於1），與 code1/code2 模組同類檢查一律用 <code>Use_flag=0</code>（等於0）不同寫法</td><td>如果商品明細層真的存在二元以外的第三種狀態值（如「待上架」），這裡的判斷邏輯（把「非停用」都當作「啟用中」）可能與 code1/code2 模組「只有明確=0才算啟用中」的判斷邏輯不一致，改寫時建議統一判斷方式並向資料庫確認 Use_flag 實際值域</td><td>code3mod_stop.asp 第11行</td></tr>
+<tr><td>D3-09</td><td><code>code3.asp</code> 存在 <code>flag</code> 參數驅動的雙路徑模式（見第4章），是本模組獨有、code1/code2 模組沒有的額外複雜度</td><td>改寫時若未確認 <code>flag=0</code> 這條路徑是否仍有實際入口在使用，可能會遺漏一種合法的舊系統導覽方式</td><td>code3.asp（多處）</td></tr>
+<tr><td>D3-10</td><td>與 code1/code2 模組相同的通用缺陷：SQL 字串串接（Injection風險）、<code>err&lt;&gt;0</code> 錯誤處理形同虛設</td><td>同前述模組</td><td>幾乎所有檔案</td></tr>
+</table>
+
+<h2 id="glossary">10. 中文／系統術語對照表</h2>
+<table>
+<tr><th>原文用詞</th><th>程式中的欄位/識別字</th><th>建議英文對應</th></tr>
+<tr><td>品牌 / 品牌代碼</td><td><code>Code3</code>, <code>Item_3</code>, <code>Item3_name</code></td><td>Brand / Brand Code</td></tr>
+<tr><td>系統品牌編號</td><td><code>Code3</code></td><td>System-assigned Brand ID</td></tr>
+<tr><td>品牌編號（使用者自訂）</td><td><code>Item_3</code></td><td>User-defined Brand Code</td></tr>
+<tr><td>品牌名稱</td><td><code>Item3_name</code></td><td>Brand Name</td></tr>
+<tr><td>商品 / 明細（第四層，本模組不直接管理）</td><td><code>TB_GD_RepairDataList_200501</code></td><td>Product / Goods (Level 4)</td></tr>
+<tr><td>項目別／服務名稱（品牌所屬的祖父層／父層）</td><td><code>code1</code>／<code>code2</code>（FK）</td><td>Grandparent Item / Parent Service</td></tr>
+</table>
+<p>其餘與 code1、code2 模組共用的術語，請參見 <code>code1_system_spec.html</code>、<code>code2_system_spec.html</code>。</p>
+
+<h2 id="rewrite">11. 改寫建議</h2>
+<div class="callout ok">
+<strong>建議的目標架構（延續 code1／code2 模組的 REST 設計風格）</strong>
+Code3 依附於 Code1＋Code2 這對組合鍵，建議設計為巢狀資源，並在改寫時主動補齊本模組相對於 code1/code2 缺少的防呆規則。
+</div>
+<table>
+<tr><th>原始頁面/處理器</th><th>建議 API</th><th>對應服務層函式（示意）</th></tr>
+<tr><td>code3.asp</td><td><code>GET /api/groups/{groupId}/services/{code2}/brands</code>（或跨層查詢端點）</td><td><code>listBrands(groupId, itemFilter, serviceFilter, brandFilter, page)</code></td></tr>
+<tr><td>code3add.asp（表單）+ code3add_db.asp</td><td><code>POST /api/groups/{groupId}/services/{code2}/brands</code></td><td><code>createBrand(groupId, code1, code2, brandCode, brandName, picture, useFlag)</code>——<b>新系統應在此補上 code1/code2 模組都有、但 code3 缺少的「重複代碼」檢查</b>（D3-03）</td></tr>
+<tr><td>code3mod_temp.asp（mod=1）+ code3mod.asp</td><td><code>GET /api/groups/{groupId}/brands/{code3}</code><br><code>PUT /api/groups/{groupId}/brands/{code3}</code></td><td><code>updateBrand(groupId, code3, ...)</code>——<b>務必補上 groupId 範圍檢查與重複代碼檢查</b>（D3-05 是本模組最需要優先修正的缺口）；同時決定是否要把 <code>code3mod_db.asp</code>（D3-04）裡「父層服務必須啟用」的規則正式收編進來</td></tr>
+<tr><td>code3mod_temp.asp（mod=2）+ code3mod_stop.asp</td><td><code>POST /api/groups/{groupId}/brands/{code3}/deactivate</code></td><td><code>deactivateBrand(groupId, code3)</code>（內含下層商品明細檢查，注意統一 Use_flag 的判斷方式，見 D3-08）</td></tr>
+<tr><td>code3stopmsg.asp + code3stopmsg_db.asp</td><td><code>GET /api/groups/{groupId}/brands/{code3}/suspension-notice</code><br><code>PUT /api/groups/{groupId}/brands/{code3}/suspension-notice</code></td><td><code>getSuspensionNotice(...)</code> / <code>upsertSuspensionNotice(...)</code>（LinkLevel 固定為品牌層級對應值）</td></tr>
+</table>
+<ul>
+<li><b>優先修正 D3-05：</b>這是本模組唯一明顯比兄弟模組退步、且有實際安全/資料完整性風險的缺口，建議列為改寫時的第一優先項，而不是照抄既有行為。</li>
+<li><b>決定 <code>code3mod_db.asp</code> 的去留：</b>先確認資料夹外是否還有頁面連結它；若確定無人使用，新系統不需要重建這支檔案本身，但其內含的「父層服務必須啟用」規則值得評估是否要正式納入 <code>updateBrand</code> 的驗證邏輯。</li>
+<li><b>統一 99 互斥規則的實作深度：</b>如果業務上 code3 也應該有跟 code2 一樣的「99互斥」伺服端規則，改寫時建議一併補齊，並抽成三個模組共用的驗證函式。</li>
+<li><b>確認 <code>flag</code> 雙路徑模式是否仍需保留：</b>與需求方確認 code3.asp 的兩種導覽路徑是否都還有真實入口在用；如果其中一種已經沒人用，新系統可以只保留一種路由方式，不需要複製這個分支邏輯。</li>
+<li><b>統一 Use_flag 值域與判斷方式：</b>向資料庫確認 <code>TB_GD_RepairDataList_200501.Use_flag</code>（以及 code2 模組畫面上出現過的「2=待上架」）實際會出現哪些值，讓新系統的 enum 定義完整，並統一「等於0」與「不等於1」兩種判斷寫法。</li>
+</ul>
+
+<h2 id="appendix">12. 附錄：原始碼全文（Big5→UTF-8，內容未變更僅轉碼）</h2>
+<p>以下為 9 個檔案的完整原始碼，供逐行核對使用。</p>
+
+<h3 class="file-anchor">12.1 code3.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+page = Request("page")
+If page = "" or page = null Then
+	page = 1
+Else
+	page = int(page)
+End If
+
+
+'-------------------
+'   查詢
+'-------------------
+	sql="select a.*,b.item_2 as item_2, c.item_1 as item_1 ,b.item2_name as item2_name,c.item1_name as item1_name from TB_GD_RepairCode3_200501 a,TB_GD_RepairCode2_200501 b ,TB_GD_RepairCode1_200501 c where a.code1=c.code1 and a.code2=b.code2  and b.code1=c.code1 and b.use_flag=0 and c.use_flag=0 and c.groupid="&amp;request("mid")&amp;" "
+	if request("Item_1")&lt;&gt;"" then
+	 sql=sql&amp;" and c.code1 ="&amp;request("Item_1")&amp;""
+	end if
+	if request("Item_2")&lt;&gt;"" then
+	 sql=sql&amp;" and b.code2 ="&amp;request("Item_2")&amp;""
+	end if
+	if request("Item_3")&lt;&gt;"" then
+	 sql=sql&amp;" and a.item_3 ='"&amp;request("Item_3")&amp;"'"
+	end if
+	if request("Item3_name")&lt;&gt;"" then
+	sql=sql&amp;" and a.Item3_name like '%" &amp; Request("Item3_name") &amp; "%'"
+	end if
+	sql=sql&amp;" order by b.code1"
+	'response.write sql
+	set rs=server.createObject("adodb.recordset")
+	rs.open sql,conn,3,3
+%&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;center&gt;
+&lt;table width=600 border=1 &gt;
+&lt;tr&gt;
+&lt;td align=center colspan=8&gt;&lt;font size=-1&gt;品牌管理&lt;/td&gt;
+&lt;/tr&gt;
+&lt;%
+if request("flag")="0" then
+	%&gt;
+&lt;form name="form1" action="../../../../system/rightmain.asp" method="post" onsubmit="return checkall(this)"&gt;
+&lt;%else%&gt;
+&lt;form name="form1" action="../system/rightmain.asp" method="post" onsubmit="return checkall(this)"&gt;
+&lt;%end if%&gt;
+&lt;input type="hidden" name="wid" value="&lt;%=Request("wid")%&gt;"&gt;
+&lt;input type="hidden" name="fid" value="&lt;%=Request("fid")%&gt;"&gt;
+&lt;input type="hidden" name="sid" value="&lt;%=Request("sid")%&gt;"&gt;
+&lt;input type="hidden" name="mid" value="&lt;%=Request("mid")%&gt;"&gt;
+&lt;tr&gt;
+	&lt;td align=center colspan=8 &gt;&lt;font size=-1&gt;項目別:
+	&lt;%
+		sql1="select * from TB_GD_RepairCode1_200501 where item_1&lt;&gt;'99' and use_flag=0 and groupid="&amp; request("mid")&amp;" order by Item1_name"
+		set rsring = conn.Execute( sql1 )
+
+	if request("flag")="0" then
+	%&gt;
+	&lt;select size="1" name="Item_1" Onchange="location.href='code3.asp?sid=&lt;%=Request("sid")%&gt;&amp;fid=&lt;%=Request("fid")%&gt;&amp;wid=&lt;%=Request("wid")%&gt;&amp;mid=&lt;%=request("mid")%&gt;&amp;flag=0&amp;Item_1='+this.options[this.selectedIndex].value;"&gt;
+	&lt;%else%&gt;
+	&lt;select size="1" name="Item_1" Onchange="location.href='&lt;%=Session("folder")%&gt;code3.asp?sid=&lt;%=Request("sid")%&gt;&amp;fid=&lt;%=Request("fid")%&gt;&amp;mid=&lt;%=request("mid")%&gt;&amp;wid=&lt;%=Request("wid")%&gt;&amp;flag=0&amp;Item_1='+this.options[this.selectedIndex].value;"&gt;
+
+	&lt;%end if%&gt;
+	&lt;Option value=""&gt;項目別:&lt;/Option&gt;
+		&lt;%While Not rsring.EOF
+		code1=rsring("code1")
+		%&gt;
+    	&lt;Option value="&lt;%=code1%&gt;"&lt;%if trim(rsring("code1"))=trim(request("Item_1")) then%&gt; selected &lt;%end if%&gt;&gt;&lt;%=rsring("Item1_name")%&gt;&lt;/Option&gt;
+		&lt;%
+		rsring.MoveNext
+		Wend
+		%&gt;
+   	 &lt;/select&gt;
+   	 服務名稱:
+	&lt;%
+		if request("item_1")&lt;&gt;"" then
+			sql2="select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.code1="&amp;request("item_1")&amp;" and a.use_flag=0 and b.groupid= "&amp;request("mid")&amp;" order by a.code1"
+			'sql2="select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.code1="&amp;request("item_1")&amp;" and a.use_flag=0 and b.actionid= "&amp;request("mid")&amp;" order by a.code1"
+		else
+			sql2="select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.use_flag=0 and b.groupid= "&amp;request("mid")&amp;" order by a.code1"
+			'sql2="select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.use_flag=0 and b.actionid= "&amp;request("mid")&amp;" order by a.code1"
+		end if
+		'response.write sql2
+		'response.end
+		set rsring2 = conn.Execute( sql2 )
+	%&gt;
+	&lt;select size="1" name="Item_2"&gt;
+		&lt;Option value=""&gt;服務名稱:&lt;/Option&gt;
+		&lt;%While Not rsring2.EOF%&gt;
+    	&lt;Option value="&lt;%=rsring2("code2")%&gt;" &lt;%if trim(rsring2("code2"))=trim(request("Item_2")) then%&gt; selected &lt;%end if%&gt;&gt;&lt;%=rsring2("Item2_name")%&gt;&lt;/Option&gt;
+		&lt;%
+		rsring2.MoveNext
+		Wend
+		%&gt;
+   	 &lt;/select&gt;
+    品牌名稱:&lt;input type="text" name="Item3_name" size="10" value=&lt;%=request("Item3_name")%&gt;&gt;&lt;input type="submit" value="查詢"&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/form&gt;
+&lt;tr&gt;
+&lt;td align=center colspan=8&gt;&lt;font size=-1&gt;
+&lt;%
+if not rs.eof then
+     rs.pagesize=10
+     rs.absolutepage=page
+%&gt;
+（選擇跳至 &lt;select name="jump" onchange="location.href=this.options[this.selectedIndex].value;" size="1" &gt;
+                &lt;option selected value=""&gt;目前在&lt;%=Page%&gt;頁&lt;/option&gt;
+                &lt;%
+                For x = 1 to rs.PageCount
+                If x &lt;&gt; Page Then%&gt;
+                &lt;%if request("flag")="0" then%&gt;
+                &lt;option value="../../../rightmain.asp?wid=&lt;%=Request("wid")%&gt;&amp;fid=&lt;%=Request("fid")%&gt;&amp;sid=&lt;%=Request("sid")%&gt;&amp;mid=&lt;%=request("mid")%&gt;&amp;Page=&lt;%=x%&gt;&amp;Item3_name=&lt;%=Request("Item3_name")%&gt;&amp;Item_3=&lt;%=Request("Item_3")%&gt;&amp;Item_1=&lt;%=Request("Item_1") %&gt;&amp;Item_2=&lt;%=Request("Item_2") %&gt;"&gt;選擇跳至&lt;%=x%&gt;頁&lt;/option&gt;
+                &lt;%else%&gt;
+                &lt;option value="rightmain.asp?wid=&lt;%=Request("wid")%&gt;&amp;fid=&lt;%=Request("fid")%&gt;&amp;sid=&lt;%=Request("sid")%&gt;&amp;mid=&lt;%=request("mid")%&gt;&amp;Page=&lt;%=x%&gt;&amp;Item3_name=&lt;%=Request("Item3_name")%&gt;&amp;Item_3=&lt;%=Request("Item_3")%&gt;&amp;Item_1=&lt;%=Request("Item_1") %&gt;&amp;Item_2=&lt;%=Request("Item_2") %&gt;"&gt;選擇跳至&lt;%=x%&gt;頁&lt;/option&gt;
+                &lt;%end if%&gt;
+                &lt;%
+                End If
+                Next
+                %&gt;
+          &lt;/select&gt;頁）
+&lt;%end if%&gt;
+
+&lt;/td&gt;
+&lt;tr bgcolor=dddddd&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;修改資料&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;系統品牌編號&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;品牌編號&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;項目名稱&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;服務名稱&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;品牌名稱&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;使用狀態&lt;/td&gt;
+&lt;td align=center&gt;&lt;font size=-1&gt;
+	&lt;%if request("flag")="0" then%&gt;
+		&lt;input type=button value="新增代碼" onClick="location.href='code3add.asp?mid=&lt;%=request("mid")%&gt;'"&gt;
+	&lt;%else%&gt;
+		&lt;input type=button value="新增代碼" onClick="location.href='&lt;%=Session("folder")%&gt;code3add.asp?mid=&lt;%=request("mid")%&gt;'"&gt;
+	&lt;%end if%&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;%
+'--------------------
+'  顯示所有名稱
+'--------------------
+if not  rs.eof then
+	for x = 1 to rs.pagesize
+	id=rs("code3")
+	item_1=rs("item_1")
+	item_2=rs("item_2")
+	Item_3=rs("Item_3")
+	Item3_name=rs("Item3_name")
+	if rs("Use_flag") ="0" then
+	    status_flag="0"
+		status="使用中"
+	else
+		status_flag="1"
+		status="未啟用"
+	end if
+	response.write "&lt;tr&gt;"
+%&gt;
+&lt;%
+if request("flag")="0" then
+	%&gt;
+  &lt;form name="form2" method="post" action="code3mod.asp?Code3=&lt;%=id%&gt;" &gt;
+  &lt;%else%&gt;
+  &lt;form name="form2" method="post" action="&lt;%=Session("folder")%&gt;code3mod.asp?Code3=&lt;%=id%&gt;" &gt;
+  &lt;%end if%&gt;
+  &lt;%if status_flag="1" then%&gt;
+      		   &lt;td align=center&gt;&lt;font size=-1&gt;
+			   &lt;%if request("flag")="0" then%&gt;
+					&lt;input type="button" class="small2_button" value="修改" OnClick="location.href='code3mod_temp.asp?Code3=&lt;%=Rs("Code3")%&gt;&amp;mod=1&amp;item_3=&lt;%=item_3%&gt;&amp;mid=&lt;%=request("mid")%&gt;'"&gt;
+				&lt;%else%&gt;
+					&lt;input type="button" class="small2_button" value="修改" OnClick="location.href='&lt;%=Session("folder")%&gt;code3mod_temp.asp?Code3=&lt;%=Rs("Code3")%&gt;&amp;mod=1&amp;item_3=&lt;%=item_3%&gt;&amp;mid=&lt;%=request("mid")%&gt;'"&gt;
+				&lt;%end if%&gt;
+			   &lt;/td&gt;
+     &lt;%else%&gt;
+      		&lt;td align=center&gt;&amp;nbsp;&lt;/td&gt;
+     &lt;%end if%&gt;
+	 &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=id%&gt;&amp;nbsp;&lt;/td&gt;
+     &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=Item_3%&gt;&amp;nbsp;&lt;/td&gt;
+      &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=rs("Item1_name")%&gt;&amp;nbsp; &lt;input type="hidden" name="Item_1&lt;%=id%&gt;" value="&lt;%=item_1%&gt;"&gt;&lt;/td&gt;
+      &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=rs("Item2_name")%&gt;&amp;nbsp; &lt;input type="hidden" name="Item_2&lt;%=id%&gt;" value="&lt;%=item_2%&gt;"&gt;&lt;/td&gt;
+     &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=Item3_name%&gt;&amp;nbsp;&lt;/td&gt;
+        &lt;td align=center&gt;&lt;font size=-1&gt;&lt;%=status%&gt;&lt;/td&gt;
+	&lt;%if status_flag="0" then%&gt;
+    &lt;td align=center&gt;
+				&lt;%if request("flag")="0" then%&gt;
+					&lt;input type="button" class="small2_button" value="停用" OnClick="location.href='code3mod_temp.asp?Code3=&lt;%=Rs("Code3")%&gt;&amp;Use_flag=1&amp;mod=2&amp;item_3=&lt;%=item_3%&gt;&amp;mid=&lt;%=request("mid")%&gt;'"&gt;
+				&lt;%else%&gt;
+					&lt;input type="button" class="small2_button" value="停用" OnClick="location.href='&lt;%=Session("folder")%&gt;code3mod_temp.asp?Code3=&lt;%=Rs("Code3")%&gt;&amp;Use_flag=1&amp;mod=2&amp;item_3=&lt;%=item_3%&gt;&amp;mid=&lt;%=request("mid")%&gt;'"&gt;
+				&lt;%end if%&gt;
+
+	&lt;/td&gt;
+      &lt;%else%&gt;
+      		&lt;td align=center&gt;&amp;nbsp;&lt;/td&gt;
+     &lt;%end if%&gt;
+        &lt;/form&gt;
+&lt;%
+	response.write "&lt;/tr&gt;"
+	rs.movenext
+	if rs.eof then exit for
+	next
+end if
+%&gt;
+&lt;/table&gt;
+&lt;/center&gt;
+
+&lt;script language="javascript"&gt;
+&lt;!--
+document.form1.all["Item3_name"].id   		= "品牌名稱";
+function openWindow(theURL,winName,features)
+{ //v2.0
+  window.open(theURL,winName,features);
+}
+
+function checkall(form){
+  var flag1=false;
+	if(checkillegal(form.Item3_name))
+		return false;
+}
+function checkillegal(obj){
+	var illegal_arr=['`','^','"','@','!','&amp;','.','#','%','*','(',')','+','-','\''];
+	for(var o=0 ; o&lt;illegal_arr.length; o++){
+		if(obj.value.indexOf(illegal_arr[o])!= -1){
+			alert(obj.id + "不能有"+illegal_arr[o] +" 此字元存在");
+			return true;
+		}
+	}
+}
+
+--&gt;
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.2 code3add.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;!--#include file="../../../db/chk_session2.asp" --&gt;
+&lt;style&gt;
+&lt;!--
+.aa {  font-size: 11pt; color: #0033CC}
+.allie {  background-color: #B9DCFF; height: 15pt; border-color: #999999 ; border-width: 1px}
+.all1  {  background-color: #FFFF99; height: 15pt; border-color: #999999 ; border-width: 1px}
+.atext {  background-color: #eeee00; height: 45pt; border-color: #999999 ; border-width: 1px}
+--&gt;
+&lt;/style&gt;
+&lt;script language="JavaScript" type="text/JavaScript"&gt;
+&lt;!--
+function upload(theURL,winName,features,arg1,arg2,arg3)
+{
+  //window.open(theURL+"?aid="+document.Form[arg1].value+"&amp;bid="+document.Form[arg2].value+"&amp;cid="+document.Form[arg3].value,winName,features);
+
+  window.open(theURL,winName,features);
+}
+--&gt;
+&lt;/script&gt;
+&lt;html&gt;
+&lt;body topmargin="0" leftmargin="0" rightmargin="0" bottonmargin="0" &gt;
+&lt;center&gt;
+	&lt;form name="form1" action="code3add_db.asp" method="post" onsubmit="return checkall(this)"&gt;
+	&lt;center&gt;&lt;p&gt;&lt;br&gt;
+	&lt;table  width="70%" border="1" &gt;
+	&lt;tr&gt;
+		&lt;td colspan=4 align="center"&gt;&lt;font size=-1&gt;&lt;b&gt;新增品牌&lt;/b&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;%
+		'sql1="select distinct a.code1,a.item1_name from TB_GD_RepairCode1_200501 a,TB_GD_RepairCode2_200501 b where a.use_flag=0 and a.item_1&lt;&gt;99 and b.item_2&lt;&gt;99 and a.code1=b.code1 group by a.code1,a.item1_name order by a.code1"
+		sql1="select code1,item1_name from TB_GD_RepairCode1_200501 where use_flag=0 and item_1&lt;&gt;'99' and groupid="&amp;request("mid")&amp;" order by code1"
+		set rsring = conn.Execute( sql1 )
+	%&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;項目名稱&lt;/td&gt;
+		&lt;td colspan=3&gt;	&lt;font size=-1&gt;
+		&lt;select size="1" name="code1" Onchange="location.href='code3add.asp?mid=&lt;%=request("mid")%&gt;&amp;code1='+this.options[this.selectedIndex].value;"&gt;
+		&lt;Option value=""&gt;請選擇&lt;/option&gt;
+		&lt;%While Not rsring.EOF
+		code1=rsring("code1")
+		%&gt;
+    	&lt;Option value="&lt;%=code1%&gt;" &lt;%if trim(code1)=trim(request("code1")) then%&gt; selected &lt;%end if%&gt;&gt;&lt;%=rsring("Item1_name")%&gt;&lt;/Option&gt;
+		&lt;%
+		rsring.MoveNext
+		Wend
+		%&gt;
+   	 &lt;/select&gt;
+	&lt;/tr&gt;
+	&lt;%
+		'sql2="select * from TB_GD_RepairCode2_200501 where use_flag=0 "
+		sql2="select a.code2,a.Item2_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.code1 and a.use_flag=0 and b.groupid= "&amp;request("mid")&amp;" "
+		if request("code1")&lt;&gt;"" then
+		sql2=sql2&amp;" and a.code1="&amp;request("code1")&amp;""
+		end if
+		'response.write sql2
+		'response.end
+		set rsring2 = conn.Execute( sql2 )
+	%&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;服務名稱&lt;/td&gt;
+		&lt;td colspan=3&gt;	&lt;font size=-1&gt;
+		&lt;select size="1" name="code2"&gt;
+		&lt;Option value=""&gt;請選擇&lt;/option&gt;
+		&lt;%While Not rsring2.EOF%&gt;
+    	&lt;Option value="&lt;%=rsring2("code2")%&gt;"&gt;&lt;%=rsring2("Item2_name")%&gt;&lt;/Option&gt;
+		&lt;%
+		rsring2.MoveNext
+		Wend
+		%&gt;
+   	 &lt;/select&gt;
+	&lt;/tr&gt;
+
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌編號&lt;/td&gt;
+		&lt;td colspan=3&gt;	&lt;font size=-1&gt;&lt;input type="text"  class="allie"   size="5" name="Item_3" maxlength="2" &gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌名稱&lt;/td&gt;
+		&lt;td colspan=3&gt;	&lt;font size=-1&gt;&lt;input type="text"  class="allie"   size="40" name="Item3_name" maxlength="15" &gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌名稱圖檔上傳&lt;/td&gt;
+		&lt;td colspan=3&gt;&lt;font size=-1&gt;
+		 &lt;input name="logo" type="hidden" id="logo" value=""&gt;
+		&lt;img src="select.gif" name="pic" width="160" height="120" id="pic"&gt;
+		&lt;input type="button" value="上傳圖檔" onclick="upload('upload_code1.asp','aaa','width=300,height=100,left=350,top=150,scrollbars=yes','menuid','iid','sid');"  maxlength="30"&gt;
+			[ &lt;font size=2 color="red"&gt;僅能上傳 .jpg 及 .gif 圖檔&lt;/font&gt; ]&lt;/td&gt;
+	&lt;/tr&gt;
+&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;啟用狀態&lt;/td&gt;&lt;td&gt;&lt;font size=-1&gt;
+		&lt;input type="radio" name="Use_flag" value="0"&gt;啟用
+		&lt;input type="radio" name="Use_flag" value="1" checked &gt;停用
+		&lt;/td&gt;
+	&lt;/tr&gt;
+    	&lt;tr&gt;
+      		&lt;td align="middle" Colspan="4" &gt;&lt;input type="button" value="放棄新增" onClick="location.href='&lt;%=Session("URL")%&gt;'"&gt;&lt;input type="submit" value="新增完成"&gt;&lt;/td&gt;
+    	&lt;/tr&gt;
+&lt;script language="javascript"&gt;
+&lt;!--
+document.form1.all["code1"].id		= "項目名稱";
+document.form1.all["Item_3"].id		= "品牌編號";
+document.form1.all["Item3_name"].id   		= "品牌名稱";
+function openWindow(theURL,winName,features)
+{ //v2.0
+  window.open(theURL,winName,features);
+}
+
+function checkall(form){
+	if(checknull(form.code1) || checknull(form.Item_3) || checknull(form.Item3_name))
+		return false;
+	//  if(checknumber(form.Item_3) )
+		//  return false;
+	if(checkillegal(form.Item3_name))
+		return false;
+	 if(form.Item_3.value == "99"){
+     flag1=confirm("品牌編號99於前台不顯示");
+     if(flag1==true){
+     return true;
+     }
+     else
+     {
+	return false;}
+	}
+}
+function checknull(obj){
+	if(obj.value=="" || obj.value==null){
+		alert("請輸入" + obj.id);
+		obj.focus();
+		return true;
+	}else{
+		return false;
+	}
+}
+function checklength(obj,num){
+	if(obj.value.length &lt; num){
+		alert(obj.id + "要大於" + num + "字元");
+		obj.focus();
+		return true;
+	}
+}
+function checkillegal(obj){
+	var illegal_arr=['`','^','"','@','!','&amp;','.','#','%','*','(',')','+','-','\''];
+	for(var o=0 ; o&lt;illegal_arr.length; o++){
+		if(obj.value.indexOf(illegal_arr[o])!= -1){
+			alert(obj.id + "不能有"+illegal_arr[o] +" 此字元存在");
+			return true;
+		}
+	}
+}
+function checknumber(obj){
+	if (isNaN(obj.value)){
+		alert(obj.id + "需為數字型態");
+		obj.focus();
+		return true;
+	}
+}
+
+function checkspace(obj){
+	var space_arr=[' '];
+	for(var p=0 ; p&lt;space_arr.length; p++){
+		if(obj.value.indexOf(space_arr[p])!= -1){
+			alert(obj.id + "不能有空白字元存在");
+			return true;
+		}
+	}
+}
+--&gt;
+&lt;/script&gt;
+  &lt;/table&gt;
+  &lt;/center&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.3 code3add_db.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+code1     	=Request("code1")
+code2     	=Request("code2")
+Item_3     	=Request("Item_3")
+Item3_name     	=Request("Item3_name")
+item3_pic=request("logo")
+use_flag=request("use_flag")
+
+If  ( ( Instr(Item_1,"'") &lt;&gt; 0 ) or  ( Instr(Item1_name,"'") &lt;&gt; 0 ) ) Then
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("資料中不可以有 ' 符號!");
+	history.go(-1);
+	&lt;/script&gt;
+	&lt;%
+	response.end
+End if
+
+
+
+
+
+sql=       "Insert Into  TB_GD_RepairCode3_200501 "
+sql =sql &amp; "(code1,code2,Item_3,Item3_name,Item3_pic,use_flag) Values"
+sql =sql &amp; "("&amp;code1&amp;","&amp;code2&amp;",'"&amp; Item_3 &amp;"','"&amp; Item3_name &amp;"','"&amp; Item3_pic &amp;"',"&amp;use_flag&amp;")       "
+'response.write sql
+'response.end
+conn.execute(sql)
+
+if err&lt;&gt;0 then
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("新增失敗!");
+	history.go(-1);
+	&lt;/script&gt;
+	&lt;%
+	response.end
+else
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("新增成功!");
+	location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+	&lt;%
+end if
+
+%&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.4 code3mod_temp.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;!--#include file="../../../db/chk_session2.asp" --&gt;
+&lt;style&gt;
+&lt;!--
+.aa {  font-size: 11pt; color: #0033CC}
+.allie {  background-color: #B9DCFF; height: 15pt; border-color: #999999 ; border-width: 1px}
+.all1  {  background-color: #FFFF99; height: 15pt; border-color: #999999 ; border-width: 1px}
+.atext {  background-color: #eeee00; height: 45pt; border-color: #999999 ; border-width: 1px}
+--&gt;
+&lt;/style&gt;
+&lt;script language="JavaScript" type="text/JavaScript"&gt;
+&lt;!--
+function upload(theURL,winName,features,arg1,arg2,arg3)
+{
+  //window.open(theURL+"?aid="+document.Form[arg1].value+"&amp;bid="+document.Form[arg2].value+"&amp;cid="+document.Form[arg3].value,winName,features);
+
+  window.open(theURL,winName,features);
+}
+--&gt;
+&lt;/script&gt;
+&lt;html&gt;
+&lt;%
+id=trim(request("Code3"))
+'response.write id
+Item_3=request("Item_3")
+'Item1_name=request("Item1_name")
+'response.write Item1_name
+Use_flag=request("Use_flag")
+mod2=request("mod")
+if mod2="2" then
+	mod_file="code3mod_stop.asp"
+	mod_status="停用"
+else
+	mod_file="code3mod.asp"
+	mod_status="修改"
+end if
+'sqlsel="select * from TB_GD_RepairCode1_200501 where code1 ="&amp;id&amp;" "
+'sqlsel="select a.*,b.code1 as code1,b.item_1 as item_1 ,b.item1_name as item1_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.item_1 and a.code2="&amp;id&amp;" and b.use_flag=0 "
+sqlsel="select a.*,b.item_2 as item_2, c.item_1 as item_1 ,b.item2_name as item2_name,c.item1_name as item1_name from TB_GD_RepairCode3_200501 a,TB_GD_RepairCode2_200501 b ,TB_GD_RepairCode1_200501 c where a.code1=c.code1 and a.code2=b.code2  and b.code1=c.code1 and b.use_flag=0 and c.use_flag=0 and a.code3="&amp;id&amp;" and c.groupid="&amp;request("mid")&amp;""
+'response.write sqlsel
+'response.end
+set rsring = conn.Execute( sqlsel )
+if  rsring.eof  then
+		%&gt;
+			&lt;script language=javascript&gt;
+			alert("欲修改此品牌請將此服務管理狀態改為啟用!");
+			location.href='&lt;%=Session("url")%&gt;';
+			&lt;/script&gt;
+		&lt;%
+end if
+
+Item1_name=rsring("Item1_name")
+Item2_name=rsring("Item2_name")
+Item3_name=rsring("Item3_name")
+code1=rsring("code1")
+code2=rsring("code2")
+item_1=rsring("Item_1")
+item_2=rsring("Item_2")
+item_3=rsring("Item_3")
+item3_pic=rsring("item3_pic")
+%&gt;
+&lt;body topmargin="0" leftmargin="0" rightmargin="0" bottonmargin="0" &gt;
+&lt;center&gt;
+	&lt;form name="form1" action="&lt;%=mod_file%&gt;" method="post" onsubmit="return checkall(this)"&gt;
+	&lt;center&gt;&lt;br&gt;
+	&lt;input type="hidden" name="mid" value="&lt;%=Request("mid")%&gt;"&gt;
+	&lt;table  width="70%" border="1" &gt;
+	&lt;tr&gt;
+		&lt;td colspan=4 align="center"&gt;&lt;font size=-1&gt;&lt;b&gt;品牌管理&lt;&lt;%=mod_status%&gt;&gt;&lt;/b&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;項目名稱&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=Item1_name%&gt;&lt;input type="hidden"  name="code1" value=&lt;%=code1%&gt;&gt;&lt;input type="hidden"  name="Item_1" value=&lt;%=code1%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;服務名稱&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=Item2_name%&gt;&lt;input type="hidden"  name="code2" value=&lt;%=code2%&gt;&gt;&lt;input type="hidden"  name="Item_2" value=&lt;%=code2%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;系統指定品牌編號&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=id%&gt;&lt;input type="hidden"  name="Code3" value=&lt;%=id%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;使用者自訂品牌編號&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;
+		&lt;%if mod2="2" then%&gt;
+			&lt;%=item_3%&gt;&lt;input type="hidden"  name="item_3" value="&lt;%=item_3%&gt;" &gt;
+		&lt;%else%&gt;
+			&lt;input type="text"  class="allie"   size="5" name="Item_3" value="&lt;%=item_3%&gt;" maxlength="2" &gt;
+		&lt;%end if %&gt;
+		&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌名稱&lt;/td&gt;
+		&lt;td 	&lt;font size=-1&gt;
+		&lt;%if mod2="2" then%&gt;&lt;font size=-1&gt;
+			&lt;%=Item3_name%&gt;&lt;input type="hidden"  name="Item3_name" value="&lt;%=Item3_name%&gt;" &gt;
+		&lt;%else%&gt;
+			&lt;input type="text"  class="allie"   size="40" name="Item3_name" value="&lt;%=Item3_name%&gt;" maxlength="15" &gt;
+		&lt;%end if %&gt;
+			&lt;/td&gt;
+	&lt;/tr&gt;
+
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌名稱圖檔上傳&lt;/td&gt;
+		&lt;td 	&lt;font size=-1&gt;
+		&lt;%if mod2="2" then%&gt;&lt;font size=-1&gt;
+			&lt;%if  item3_pic= "" then  %&gt;
+				&lt;img src="select.gif" name="pic" width="160" height="120" id="pic"&gt;
+			&lt;%else%&gt;
+				&lt;img src="itemlogo/&lt;%=item3_pic%&gt;" name="pic" width="160" height="120" id="pic"&gt;
+			&lt;%end if%&gt;
+		&lt;%else%&gt;
+
+			&lt;input name="logo" type="hidden" id="logo" value="&lt;%=item3_pic%&gt;"&gt;
+
+			&lt;%if  item3_pic= "" then  %&gt;
+				&lt;img src="select.gif" name="pic" width="160" height="120" id="pic"&gt;
+			&lt;%else%&gt;
+				&lt;img src="itemlogo/&lt;%=item3_pic%&gt;" name="pic" width="160" height="120" id="pic"&gt;
+
+			&lt;%end if%&gt;
+			&lt;input type="button" value="上傳圖檔" onclick="upload('upload_code1.asp','aaa','width=300,height=100,left=350,top=150,scrollbars=yes','menuid','iid','sid');"  maxlength="30"&gt;
+			[ &lt;font size=2 color="red"&gt;僅能上傳 .jpg 及 .gif 圖檔&lt;/font&gt; ]
+		&lt;%end if %&gt;
+			&lt;/td&gt;
+	&lt;/tr&gt;
+&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;啟用狀態&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;
+		&lt;%if mod2="2" then%&gt;啟用中&lt;input type="hidden" name="Use_flag" value="1" maxlength="2" &gt;
+		&lt;%else%&gt;
+		&lt;input type="radio" name="Use_flag" value="0"&gt;啟用
+		&lt;input type="radio" name="Use_flag" value="1" checked&gt;停用
+		&lt;%end if %&gt;
+		&lt;/td&gt;
+	&lt;/tr&gt;
+    	&lt;tr&gt;
+      		&lt;td align="middle" Colspan="4" &gt;&lt;input type="button" value="放棄&lt;%=mod_status%&gt;" onClick="location.href='&lt;%=Session("URL")%&gt;'"&gt;&lt;input type="submit" value="確定&lt;%=mod_status%&gt;"&gt;&lt;input type="button" value="暫停訊息" onclick="location.href='code3stopmsg.asp?Code3=&lt;%=id%&gt;&amp;Item_3=&lt;%=Item_3%&gt;&amp;mid=&lt;%=request("mid")%&gt;&amp;wid=&lt;%=Request("wid")%&gt;&amp;fid=&lt;%=Request("fid")%&gt;&amp;sid=&lt;%=Request("sid")%&gt;'"&gt;&lt;/td&gt;
+    	&lt;/tr&gt;
+&lt;script language="javascript"&gt;
+&lt;!--
+document.form1.all["item_3"].id		= "品牌代碼";
+document.form1.all["Item3_name"].id   		= "品牌名稱";
+function openWindow(theURL,winName,features)
+{ //v2.0
+  window.open(theURL,winName,features);
+}
+
+function checkall(form){
+  var flag1=false;
+	if(checknull(form.Item_3) || checknull(form.Item3_name))
+		return false;
+	if(checknumber(form.Item_3) )
+		return false;
+	if(checkillegal(form.Item3_name))
+		return false;
+	if(form.Item_3.value == "99"){
+     flag1=confirm("品牌編號99於前台不顯示");
+     if(flag1==true){
+     return true;
+     }
+     else
+     {
+	return false;}
+	}
+}
+function checknull(obj){
+	if(obj.value=="" || obj.value==null){
+		alert("請輸入" + obj.id);
+		obj.focus();
+		return true;
+	}else{
+		return false;
+	}
+}
+function checklength(obj,num){
+	if(obj.value.length &lt; num){
+		alert(obj.id + "要大於" + num + "字元");
+		obj.focus();
+		return true;
+	}
+}
+function checkillegal(obj){
+	var illegal_arr=['`','^','"','@','!','&amp;','.','#','%','*','(',')','+','-','\''];
+	for(var o=0 ; o&lt;illegal_arr.length; o++){
+		if(obj.value.indexOf(illegal_arr[o])!= -1){
+			alert(obj.id + "不能有"+illegal_arr[o] +" 此字元存在");
+			return true;
+		}
+	}
+}
+function checknumber(obj){
+	if (isNaN(obj.value)){
+		alert(obj.id + "需為數字型態");
+		obj.focus();
+		return true;
+	}
+}
+
+function checkspace(obj){
+	var space_arr=[' '];
+	for(var p=0 ; p&lt;space_arr.length; p++){
+		if(obj.value.indexOf(space_arr[p])!= -1){
+			alert(obj.id + "不能有空白字元存在");
+			return true;
+		}
+	}
+}
+
+
+
+--&gt;
+&lt;/script&gt;
+  &lt;/table&gt;
+  &lt;/center&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.5 code3mod.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+id=trim(request("code3"))
+'response.write id
+Item3_name=request("Item3_name")
+item_1=request("code1")
+item_2=request("code2")
+item_3=request("item_3")
+item3_pic=request("logo")
+'response.write Item2_name
+Use_flag=request("Use_flag")
+actionid=request("mid")
+
+SQL=       " Update TB_GD_RepairCode3_200501  set "
+			SQL= SQL &amp; " Item_3 ='" &amp; Item_3 &amp; "',"
+			SQL= SQL &amp; " Item3_name ='" &amp; Item3_name &amp; "',"
+			SQL= SQL &amp; " Item3_pic ='" &amp; Item3_pic &amp; "',"
+			SQL= SQL &amp; " Use_flag ="  &amp; Use_flag  &amp; ""
+			SQL= SQL &amp; " where Code3= " &amp; id &amp; ""
+			'response.write SQL
+			'response.end
+			set rs=server.createObject("adodb.recordset")
+			conn.execute(SQL)
+
+			if err&lt;&gt;0 then
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("修改失敗!");
+				history.go(-1);
+				&lt;/script&gt;
+			&lt;%
+				response.end
+			else
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("修改成功!");
+				location.href='&lt;%=Session("url")%&gt;';
+				&lt;/script&gt;
+			&lt;%
+			end if
+
+%&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.6 code3mod_db.asp（孤兒程式，未被任何其他 code3 檔案引用）</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+id=trim(request("code3"))
+'response.write id
+Item3_name=request("Item3_name" &amp; id)
+item_1=request("item_1"&amp; id)
+item_2=request("item_2"&amp; id)
+'response.write Item2_name
+item3_pic=request("logo")
+Use_flag=request("Use_flag" &amp; id)
+actionid=request("mid")
+if Use_flag="1" then
+sqlsel="select * from TB_GD_RepairCode2_200501 where Item_2="&amp;Item_2&amp;" and code1="&amp;item_1&amp;" "
+else
+sqlsel="select * from TB_GD_RepairCode2_200501 where Item_2="&amp;Item_2&amp;" and code1="&amp;item_1&amp;" and Use_flag="&amp;Use_flag&amp;""
+end if
+'response.write
+'response.end
+set rsring = conn.Execute( sqlsel )
+if rsring.eof  then
+
+%&gt;
+	&lt;script language=javascript&gt;
+	alert("此服務使用狀態為停止,無法開啟此品牌!");
+	location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+&lt;%
+else
+SQL=       " Update TB_GD_RepairCode3_200501  set "
+SQL= SQL &amp; " Item3_name ='" &amp; Item3_name &amp; "',"
+SQL= SQL &amp; " Item3_pic ='" &amp; Item3_pic &amp; "',"
+SQL= SQL &amp; " Use_flag ="  &amp; Use_flag  &amp; ""
+SQL= SQL &amp; " where Code3= " &amp; id &amp; ""
+'response.write SQL
+'response.end
+set rs=server.createObject("adodb.recordset")
+conn.execute(SQL)
+
+if err&lt;&gt;0 then
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("修改失敗!");
+	history.go(-1);
+	&lt;/script&gt;
+	&lt;%
+	response.end
+else
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("修改成功!");
+	location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+	&lt;%
+end if
+end if
+%&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.7 code3mod_stop.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+id=trim(request("Code3"))
+'response.write id
+Item_2=request("Item_2")
+item_1=request("item_1")
+item_3=request("item_3")
+Use_flag=request("Use_flag")
+actionid=request("mid")
+'sqlsel="select * from TB_GD_RepairCode2_200501 where code1 ="&amp;Item_1&amp;" and Use_flag=0"
+sqlsel="select * from TB_GD_RepairDataList_200501 a,TB_GD_RepairCode1_200501 b where a.code2 ="&amp;Item_2&amp;" and a.code1="&amp;item_1&amp;" and a.code3="&amp;id&amp;" and a.Use_flag&lt;&gt;1 and a.code1=b.code1 and b.groupid="&amp;actionid&amp;""
+'response.write sqlsel
+'response.end
+set rsring = conn.Execute( sqlsel )
+
+if not rsring.eof  then
+
+%&gt;
+	&lt;script language=javascript&gt;
+		alert("此品牌於商品管理已啟用無法停用!\n若要停用請先停用此品牌的商品");
+		location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+&lt;%
+else
+		SQL=       " Update TB_GD_RepairCode3_200501  set "
+		SQL= SQL &amp; " Use_flag ="  &amp; Use_flag  &amp; ""
+		SQL= SQL &amp; " where Code3= " &amp; id &amp; ""
+'response.write SQL
+'response.end
+set rs=server.createObject("adodb.recordset")
+conn.execute(SQL)
+
+if err&lt;&gt;0 then
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("修改失敗!");
+	history.go(-1);
+	&lt;/script&gt;
+	&lt;%
+	response.end
+else
+	%&gt;
+	&lt;script language=javascript&gt;
+	alert("修改成功!");
+	location.href='&lt;%=Session("url")%&gt;';
+	&lt;/script&gt;
+	&lt;%
+end if
+end if
+%&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.8 code3stopmsg.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;!--#include file="../../../db/chk_session2.asp" --&gt;
+&lt;style&gt;
+&lt;!--
+.aa {  font-size: 11pt; color: #0033CC}
+.allie {  background-color: #B9DCFF; height: 15pt; border-color: #999999 ; border-width: 1px}
+.all1  {  background-color: #FFFF99; height: 15pt; border-color: #999999 ; border-width: 1px}
+.atext {  background-color: #eeee00; height: 45pt; border-color: #999999 ; border-width: 1px}
+--&gt;
+&lt;/style&gt;
+&lt;script language="JavaScript" type="text/JavaScript"&gt;
+&lt;!--
+function upload(theURL,winName,features,arg1,arg2,arg3)
+{
+  //window.open(theURL+"?aid="+document.Form[arg1].value+"&amp;bid="+document.Form[arg2].value+"&amp;cid="+document.Form[arg3].value,winName,features);
+
+  window.open(theURL,winName,features);
+}
+--&gt;
+&lt;/script&gt;
+&lt;!--#include file="../../../calendar.asp" --&gt;
+&lt;html&gt;
+&lt;%
+id=trim(request("Code3"))
+'response.write id
+Item_3=request("Item_3")
+'Item1_name=request("Item1_name")
+'response.write Item1_name
+Use_flag=request("Use_flag")
+mod2=request("mod")
+if mod2="2" then
+	mod_file="code3mod_stop.asp"
+	mod_status="停用"
+else
+	mod_file="code3mod.asp"
+	mod_status="修改"
+end if
+'sqlsel="select * from TB_GD_RepairCode1_200501 where code1 ="&amp;id&amp;" "
+'sqlsel="select a.*,b.code1 as code1,b.item_1 as item_1 ,b.item1_name as item1_name from TB_GD_RepairCode2_200501 a,TB_GD_RepairCode1_200501 b where a.code1=b.item_1 and a.code2="&amp;id&amp;" and b.use_flag=0 "
+sqlsel="select a.*,b.item_2 as item_2, c.item_1 as item_1 ,b.item2_name as item2_name,c.item1_name,c.actionid as actionid from TB_GD_RepairCode3_200501  a,TB_GD_RepairCode2_200501  b ,TB_GD_RepairCode1_200501  c where a.code1=c.code1 and a.code2=b.code2  and b.code1=c.code1 and b.use_flag=0 and c.use_flag=0 and a.code3="&amp;id&amp;" and c.groupid="&amp;request("mid")&amp;""
+'response.write sqlsel
+'response.end
+set rsring = conn.Execute( sqlsel )
+if  rsring.eof  then
+		%&gt;
+			&lt;script language=javascript&gt;
+			alert("欲修改此品牌請將此服務管理狀態改為啟用!");
+			location.href='&lt;%=Session("url")%&gt;';
+			&lt;/script&gt;
+		&lt;%
+end if
+Item1_name=rsring("Item1_name")
+Item2_name=rsring("Item2_name")
+Item3_name=rsring("Item3_name")
+code1=rsring("code1")
+actionid=rsring("actionid")
+code2=rsring("code2")
+item_1=rsring("Item_1")
+item_2=rsring("Item_2")
+item_3=rsring("Item_3")
+item3_pic=rsring("item3_pic")
+use_flag=rsring("use_flag")
+
+SQL="Select * From  TB_GD_StopServiceMSG_201010 where  code1='"&amp;code1&amp;"' and code2='"&amp;code2&amp;"' and code3='"&amp;id&amp;"' and code4='0' and linklevel=2  "
+'response.write SQL
+set rsStop = conn0.Execute( sql )
+if not rsStop.eof  then
+	StopMSGID=rsStop("StopMSGID")
+	StopActionid=rsStop("Actionid")
+	StopCode1=rsStop("Code1")
+	StopCode2=rsStop("Code2")
+	StopCode3=rsStop("Code3")
+	StopLinkLevel=rsStop("LinkLevel")
+	StopMSGData=rsStop("MSGData")
+	StopBeginDate=rsStop("BeginDate")
+	StopBeginTime=rsStop("BeginTime")
+	StopEndDate=dateadd("d",-1,rsStop("EndDate"))
+	StopEndTime=rsStop("EndTime")
+	StopUseFlag=rsStop("Use_Flag")
+else
+	StopMSGID=0
+	StopActionid=actionid
+	StopCode1=Code1
+	StopCode2=code2
+	StopCode3=id
+	StopLinkLevel=2
+	StopMSGData=""
+	StopBeginDate=date
+	StopBeginTime=""
+	StopEndDate=date
+	StopEndTime=""
+	StopUseFlag=0
+end if
+if StopBeginTime &lt;&gt;"" then
+	CheckBeginTime=split(StopBeginTime,":")
+	CheckBeginHour=CheckBeginTime(0)
+	CheckBeginMin =CheckBeginTime(1)
+	if len(CheckBeginHour) &lt;2 then
+		CheckBeginHour= "0" &amp; CheckBeginHour
+	end if
+	if len(CheckBeginMin) &lt;2 then
+		CheckBeginMin= "0" &amp; CheckBeginMin
+	end if
+else
+	CheckBeginHour="00"
+	CheckBeginMin ="00"
+end if
+
+if StopEndTime &lt;&gt;"" then
+	CheckEndTime=split(StopEndTime,":")
+	CheckEndHour=CheckEndTime(0)
+	CheckEndMin =CheckEndTime(1)
+	if len(CheckEndHour) &lt;2 then
+		CheckEndHour= "0" &amp; CheckEndHour
+	end if
+	if len(CheckEndMin) &lt;2 then
+		CheckEndMin= "0" &amp; CheckEndMin
+	end if
+else
+	CheckEndHour="00"
+	CheckEndMin ="00"
+end if
+%&gt;
+&lt;body topmargin="0" leftmargin="0" rightmargin="0" bottonmargin="0" &gt;
+&lt;center&gt;
+	&lt;form name="form1" action="code3stopmsg_db.asp" method="post" onsubmit="return checkall(this)"&gt;
+	&lt;center&gt;&lt;br&gt;
+	&lt;input type="hidden" name="mid" value="&lt;%=Request("mid")%&gt;"&gt;
+	&lt;table  width="70%" border="1" &gt;
+	&lt;tr&gt;
+		&lt;td colspan=4 align="center"&gt;&lt;font size=-1&gt;&lt;b&gt;品牌管理&lt;暫停訊息&gt;&lt;/b&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;項目名稱&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=Item1_name%&gt;&lt;input type="hidden"  name="code1" value=&lt;%=code1%&gt;&gt;&lt;input type="hidden"  name="Item_1" value=&lt;%=code1%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;服務名稱&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=Item2_name%&gt;&lt;input type="hidden"  name="code2" value=&lt;%=code2%&gt;&gt;&lt;input type="hidden"  name="Item_2" value=&lt;%=code2%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌名稱&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=Item3_name%&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌編號&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;&lt;%=id%&gt;&lt;input type="hidden"  name="Code3" value=&lt;%=id%&gt;&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;品牌圖檔上傳&lt;/td&gt;
+		&lt;td 	&lt;font size=-1&gt;
+
+				&lt;img src="itemlogo/&lt;%=item3_pic%&gt;" name="pic" width="160" height="120" id="pic"&gt;
+
+			&lt;/td&gt;
+	&lt;/tr&gt;
+
+		&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1&gt;商品啟用狀態&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;
+		&lt;input type="radio" name="Use_flag" value="0" &lt;%if use_flag="0" then%&gt;checked &lt;%end if%&gt;&gt;啟用
+			&lt;input type="radio" name="Use_flag" value="1" &lt;%if use_flag="1" then%&gt;checked &lt;%end if%&gt; disabled&gt;停用
+			&lt;input type="radio" name="Use_flag" value="2" &lt;%if use_flag="2" then%&gt;checked &lt;%end if%&gt; disabled&gt;待上架
+
+		&lt;/td&gt;
+	&lt;/tr&gt;
+
+	 &lt;tr&gt;&lt;td&gt;		&lt;font size=-1 color ="red"&gt;暫停訊息啟用時間&lt;/td&gt;
+		&lt;td&gt;	&lt;font size=-1&gt;
+		&lt;input type="text" name="begindate" class="allie"  size="10" value="&lt;%=StopBeginDate%&gt;"&gt;
+		&lt;img src="../../../images/cal.gif" style="cursor:Hand" onClick="YY_Calendar('begindate',650,320,'av','#FFFFFF','#666666','YY_calendar1')"&gt;
+		&lt;select name="begindate_hour"&gt;
+          &lt;%
+          	for r = 0 to 23
+				if r &lt; 10 then
+          %&gt;
+				&lt;option value="0&lt;%=r%&gt;" &lt;% if r=int(CheckBeginHour) then%&gt;selected&lt;%end if%&gt;&gt;0&lt;%=r%&gt;&lt;/option&gt;
+		&lt;%
+			  else
+          %&gt;
+				&lt;option value="&lt;%=r%&gt;" &lt;% if r=int(CheckBeginHour) then%&gt;selected&lt;%end if%&gt;&gt;&lt;%=r%&gt;&lt;/option&gt;
+		&lt;%
+			  end if
+			next
+		%&gt;
+          &lt;/select&gt;時
+		  &lt;select name="begindate_min"&gt;
+          &lt;%
+          	for m = 0 to 59
+				if m &lt; 10 then
+          %&gt;
+				&lt;option value="0&lt;%=m%&gt;" &lt;% if m=int(CheckBeginMin) then%&gt;selected&lt;%end if%&gt;&gt;0&lt;%=m%&gt;&lt;/option&gt;
+		&lt;%
+				else
+          %&gt;
+				&lt;option value="&lt;%=m%&gt;" &lt;% if m=int(CheckBeginMin) then%&gt;selected&lt;%end if%&gt;&gt;&lt;%=m%&gt;&lt;/option&gt;
+		&lt;%
+				end if
+			next
+		%&gt;
+          &lt;/select&gt;分
+		  &lt;/td&gt;
+		&lt;/td&gt;
+	&lt;/tr&gt;&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1 color ="red"&gt;暫停訊息停止時間&lt;/td&gt;
+		&lt;td colspan=3&gt;	&lt;font size=-1&gt;
+		 &lt;input type="text" class="allie"  name="enddate" size="10" value="&lt;%=StopEndDate%&gt;"&gt;&lt;img src="../../../images/cal.gif" style="cursor:Hand" onClick="YY_Calendar('enddate',650,320,'av','#FFFFFF','#666666','YY_calendar1')"&gt;
+		&lt;select name="enddate_hour"&gt;
+          &lt;%
+          	for n = 0 to 23
+				if n &lt; 10 then
+          %&gt;
+				&lt;option value="0&lt;%=n%&gt;"&lt;% if n=int(CheckEndHour) then%&gt;selected&lt;%end if%&gt;&gt;0&lt;%=n%&gt;&lt;/option&gt;
+		&lt;%
+				else
+          %&gt;
+				&lt;option value="&lt;%=n%&gt;"&lt;% if n=int(CheckEndHour) then%&gt;selected&lt;%end if%&gt;&gt;&lt;%=n%&gt;&lt;/option&gt;
+		&lt;%
+				end if
+			next
+		%&gt;
+          &lt;/select&gt;時
+          &lt;select name="enddate_min"&gt;
+          &lt;%
+          	for p = 0 to 59
+				if p &lt; 10 then
+          %&gt;
+				&lt;option value="0&lt;%=p%&gt;"&lt;% if p=int(CheckEndMin) then%&gt;selected&lt;%end if%&gt;&gt;0&lt;%=p%&gt;&lt;/option&gt;
+		&lt;%
+				else
+          %&gt;
+				&lt;option value="&lt;%=p%&gt;"&lt;% if p=int(CheckEndMin) then%&gt;selected&lt;%end if%&gt;&gt;&lt;%=p%&gt;&lt;/option&gt;
+		&lt;%
+				end if
+
+			next
+		%&gt;
+          &lt;/select&gt;分
+		&lt;/td&gt;
+	&lt;/tr&gt;
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1  color ="red"&gt;顯示訊息&lt;/td&gt;
+		&lt;td &gt;&lt;font size=-1 &gt;
+
+		&lt;textarea size="600" name="msgdata" cols="60" rows="5" onKeyDown="textCounter(this.form.msgdata,this.form.remLen8,25);" onKeyUp="textCounter(this.form.msgdata,this.form.remLen8,25);"&gt;&lt;%=StopMSGData%&gt;&lt;/textarea&gt;
+        &lt;input readonly type=text name=remLen8 size=3 maxlength=3 value="25"&gt; characters left
+		&lt;br&gt;
+		&lt;font size=-1 color ="red"&gt;(限25個中文字，特殊字元請使用全形!)&lt;/td&gt;
+	&lt;/tr&gt;
+
+	&lt;tr&gt;
+		&lt;td&gt;		&lt;font size=-1 color ="red"&gt;暫停訊息狀態&lt;/td&gt;
+		&lt;td &gt;	&lt;font size=-1&gt;
+		&lt;input type="radio" name="StopUseFlag" value="1" &lt;%if StopUseFlag="1" then%&gt;checked &lt;%end if%&gt;&gt;啟用
+			&lt;input type="radio" name="StopUseFlag" value="0" &lt;%if StopUseFlag="0" then%&gt;checked &lt;%end if%&gt;&gt;停用
+
+		&lt;/td&gt;
+	&lt;/tr&gt;
+
+
+
+	&lt;input type="hidden" name="wid" value="&lt;%=Request("wid")%&gt;"&gt;
+&lt;input type="hidden" name="fid" value="&lt;%=Request("fid")%&gt;"&gt;
+&lt;input type="hidden" name="sid" value="&lt;%=Request("sid")%&gt;"&gt;
+&lt;input type="hidden" name="actionid" value="&lt;%=actionid%&gt;"&gt;
+&lt;input type="hidden" name="STOPMSGID" value="&lt;%=STOPMSGID%&gt;"&gt;
+
+    	&lt;tr&gt;
+      		&lt;td align="middle" Colspan="4" &gt;&lt;input type="button" value="放棄&lt;%=mod_status%&gt;" onClick="location.href='&lt;%=Session("URL")%&gt;'"&gt;&lt;input type="submit" value="確定&lt;%=mod_status%&gt;"&gt;&lt;/td&gt;
+    	&lt;/tr&gt;
+&lt;script language="javascript"&gt;
+&lt;!--
+document.form1.all["msgdata"].id		= "顯示訊息";
+function openWindow(theURL,winName,features)
+{ //v2.0
+  window.open(theURL,winName,features);
+}
+
+function checkall(form){
+  var flag1=false;
+	if(checknull(form.msgdata))
+		return false;
+
+	if(checkillegal(form.msgdata))
+		return false;
+
+}
+function checknull(obj){
+	if(obj.value=="" || obj.value==null){
+		alert("請輸入" + obj.id);
+		obj.focus();
+		return true;
+	}else{
+		return false;
+	}
+}
+function checklength(obj,num){
+	if(obj.value.length &lt; num){
+		alert(obj.id + "要大於" + num + "字元");
+		obj.focus();
+		return true;
+	}
+}
+function checkillegal(obj){
+	var illegal_arr=['`','^','"','@','!','&amp;','.','#','%','*','(',')','+','-','\''];
+	for(var o=0 ; o&lt;illegal_arr.length; o++){
+		if(obj.value.indexOf(illegal_arr[o])!= -1){
+			alert(obj.id + "內容中 "+illegal_arr[o] +" 此字元請改為全形方式輸入。");
+			return true;
+		}
+	}
+}
+function checknumber(obj){
+	if (isNaN(obj.value)){
+		alert(obj.id + "需為數字型態");
+		obj.focus();
+		return true;
+	}
+}
+
+function checkspace(obj){
+	var space_arr=[' '];
+	for(var p=0 ; p&lt;space_arr.length; p++){
+		if(obj.value.indexOf(space_arr[p])!= -1){
+			alert(obj.id + "不能有空白字元存在");
+			return true;
+		}
+	}
+}
+
+&lt;!--
+function textCounter(field, countfield, maxlimit) {
+if (field.value.length &gt; maxlimit) // if too long...trim it!
+field.value = field.value.substring(0, maxlimit);
+// otherwise, update 'characters left' counter
+else
+countfield.value = maxlimit - field.value.length;
+}
+//--&gt;
+
+
+--&gt;
+&lt;/script&gt;
+  &lt;/table&gt;
+  &lt;/center&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h3 class="file-anchor">12.9 code3stopmsg_db.asp</h3>
+<pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
+&lt;%
+code2=trim(request("Code2"))
+'response.write id
+Item2_name=request("Item2_name")
+'response.write Item2_name
+StopUseFlag=request("StopUseFlag")
+code1=request("code1")
+actionid=request("actionid")
+code3=request("code3")
+begindate     	=Request("begindate")
+	begindate_hour     	=Request("begindate_hour")
+	'response.write startpresaledate_hour
+	begindate_min     	=Request("begindate_min")
+	'response.write startpresaledate_min
+
+	if len(begindate_hour)&lt;2 then
+		begindate_hour="0"&amp;begindate_hour
+	end if
+	if len(begindate_min)&lt;2 then
+		begindate_min="0"&amp;begindate_min
+	end if
+	begintime=begindate_hour&amp;":"&amp;begindate_min
+	enddate     	=Request("enddate")
+   enddate=dateadd("d",1,enddate)
+	enddate_hour     	=Request("enddate_hour")
+	enddate_min     	=Request("enddate_min")
+	if len(enddate_hour)&lt;2 then
+		enddate_hour="0"&amp;enddate_hour
+	end if
+	if len(enddate_min)&lt;2 then
+		enddate_min="0"&amp;enddate_min
+	end if
+	endtime=enddate_hour&amp;":"&amp;enddate_min
+check_Start_Date=Request("begindate") &amp; " " &amp; Request("begindate_hour") &amp;":" &amp; Request("begindate_min") &amp;":00"
+check_End_Date  =Request("enddate")   &amp; " " &amp; Request("enddate_hour")   &amp;":" &amp; Request("enddate_min")   &amp;":00"
+Check_Start=DateDiff("n",NOW,check_Start_Date)
+Check_End  =DateDiff("n",NOW,check_End_Date)
+CheckDiff =(check_End - check_Start)
+
+
+if CheckDiff &lt;= 0  and stopUseFlag="1" then
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("暫停訊息停止時間需大於暫停訊息啟用時間!");
+				history.go(-1);
+				&lt;/script&gt;
+			&lt;%
+				response.end
+end if
+if Check_Start &lt;0 and stopUseFlag="1" then
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("暫停訊息啟用時間需大於現在時間!");
+				history.go(-1);
+				&lt;/script&gt;
+			&lt;%
+				response.end
+end if
+if Check_End &lt;0 and stopUseFlag="1" then
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("暫停訊息停止時間需大於現在時間!");
+				history.go(-1);
+				&lt;/script&gt;
+			&lt;%
+				response.end
+end if
+
+
+	msgdata=Request("msgdata")
+	STOPMSGID=Request("STOPMSGID")
+wid=Request("wid")
+fid=Request("fid")
+sid=Request("sid")
+
+'id=id &amp; "#" &amp; startpresaledate &amp; "#" &amp; startpresaletime &amp; "#" &amp; stoppresaledate &amp; "#" &amp; stoppresaletime &amp;"#" &amp; Use_flag
+
+if STOPMSGID="0" then
+'	sql2= " INSERT INTO TB_GD_StopServiceMSG_201010 ([ActionID],[Code1],[Code2],[Code3],[linklevel],[MsgData] ,[Begindate],[enddate],[begintime],[endtime],[Use_flag]) VALUES "
+'	SQL2= SQL2 &amp; " ('" &amp; actionid &amp; "','"&amp; code1 &amp;"','"&amp;code2&amp;"','"&amp;code3&amp;"','2','"&amp; msgdata &amp;"','"&amp; begindate &amp;"','"&amp; enddate &amp;"','"&amp;begintime&amp;"','"&amp;endtime&amp;"',"&amp;StopUseFlag&amp;") "
+	'response.write sql2
+	sql2= " exec SP_GD_StopMsgWork_ONDB_201104 'A','"&amp;actionid&amp;"','"&amp;code1&amp;"','"&amp;code2&amp;"','"&amp;code3&amp;"','0','0','','2' ,'"&amp;msgdata&amp;"','"&amp; begindate &amp;"','"&amp; enddate &amp;"','"&amp;begintime&amp;"','"&amp;endtime&amp;"',"&amp;stopUseFlag&amp;",'0','"&amp;Session("Cname")&amp;"','' "
+	conn0.execute(SQL2)
+	SQL_ID="Select STOPMSGID From TB_GD_StopServiceMSG_201010 where code1='"&amp;code1&amp;"' and code2='"&amp;code2&amp;"' and code3='"&amp;code3&amp;"' and linklevel=2 "
+	Set rsMSGID = conn0.execute(SQL_ID)
+     STOPMSGID=rsMSGID("STOPMSGID")
+else
+'	SQL2= " Update TB_GD_StopServiceMSG_201010  set "
+'		    SQL2= SQL2 &amp; " [MsgData] ='"  &amp; msgdata  &amp; "', "
+'			SQL2= SQL2 &amp; " [Begindate] ='"  &amp; begindate  &amp; "',"
+'			SQL2=SQL2 &amp; " [enddate] ='"  &amp; enddate  &amp; "', "
+'			SQL2= SQL2 &amp; " [begintime] ='"  &amp; begintime  &amp; "',"
+'			SQL2= SQL2 &amp; " [endtime] ='"  &amp; endtime  &amp; "',"
+'			SQL2= SQL2 &amp; " Use_flag ="  &amp; StopUseFlag  &amp; ""
+'			SQL2=SQL2 &amp; " where STOPMSGID= '" &amp; STOPMSGID &amp; "'"
+		sql2= " exec SP_GD_StopMsgWork_ONDB_201104 'U','"&amp;actionid&amp;"','"&amp;code1&amp;"','"&amp;code2&amp;"','"&amp;code3&amp;"','0','0','','2' ,'"&amp;msgdata&amp;"','"&amp; begindate &amp;"','"&amp; enddate &amp;"','"&amp;begintime&amp;"','"&amp;endtime&amp;"',"&amp;stopUseFlag&amp;",'" &amp; STOPMSGID &amp; "','"&amp;Session("Cname")&amp;"','' "
+			'response.write sql
+	conn0.execute(SQL2)
+end if
+
+	sql3=replace(SQL2,"'","")
+	SQL= "  INSERT INTO TB_GD_StopServiceMsgLOG_201010 ([StopMsgID],[UserName],[MARK]) VALUES"
+	SQL= SQL &amp; " (" &amp; STOPMSGID &amp; ",'"&amp;session("cname")&amp;"','"&amp;SQL3&amp;"')"
+	'response.write sql
+	'response.end
+'	conn0.execute(SQL)
+
+			if err&lt;&gt;0 then
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("修改失敗!");
+				history.go(-1);
+				&lt;/script&gt;
+			&lt;%
+				response.end
+			else
+			%&gt;
+				&lt;script language=javascript&gt;
+				alert("修改成功!");
+				location.href='&lt;%=Session("url")%&gt;';
+				&lt;/script&gt;
+			&lt;%
+			end if
+
+
+
+%&gt;
+</code></pre>
+
+<footer>本文件由原始 9 個 ASP 檔案（Big5 編碼）自動解析整理產生，內容涵蓋所有可從程式碼推得的行為；標示為「推測」或「未知」之處，代表原始碼中未提供足夠資訊（例如外部 include、Stored Procedure 定義、<code>TB_GD_RepairDataList_200501</code> 的完整欄位、<code>code3mod_db.asp</code> 是否仍有資料夾外的呼叫端），改寫前建議與熟悉舊系統的人員或 DBA 再次確認。與 code1、code2 模組共用的架構背景，請同時參考 <code>code1_system_spec.html</code>、<code>code2_system_spec.html</code>。</footer>
+
+</main>
+</div>
+</body>
+</html>
