@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>2GBack 系統規格文件總目錄</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --nav-bg:#f7f8fa;
+    --tag1-bg:#e8f0ff; --tag1-fg:#0b5fff;
+    --tag2-bg:#eef7ee; --tag2-fg:#2f9e5b;
+    --pill-bg:#f6f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --nav-bg:#1a1d21;
+      --tag1-bg:#152238; --tag1-fg:#7db0ff;
+      --tag2-bg:#12281a; --tag2-fg:#57c98a;
+      --pill-bg:#1c2126;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+    line-height:1.7;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:40px 28px 80px;}
+  header h1{font-size:26px; margin:0 0 6px;}
+  header .sub{color:var(--muted); font-size:14.5px; margin-bottom:22px;}
+  .callout{
+    border:1px solid var(--border); background:var(--code-bg); border-radius:10px;
+    padding:14px 18px; font-size:13.5px; margin-bottom:30px;
+  }
+  .callout b{color:var(--accent);}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;}
+  .filters button{
+    border:1px solid var(--border); background:var(--pill-bg); color:var(--fg);
+    padding:6px 14px; border-radius:20px; font-size:13px; cursor:pointer;
+  }
+  .filters button.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  table{border-collapse:collapse; width:100%; font-size:13.5px;}
+  thead th{
+    text-align:left; padding:10px 12px; border-bottom:2px solid var(--border);
+    color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:var(--code-bg);}
+  tbody td{padding:14px 12px; vertical-align:top;}
+  .idcell{color:var(--muted); font-family:Consolas,monospace;}
+  .tag{display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; white-space:nowrap;}
+  .tag.code1{background:var(--tag1-bg); color:var(--tag1-fg);}
+  .tag.code2{background:var(--tag2-bg); color:var(--tag2-fg);}
+  .filename a{color:var(--accent); text-decoration:none; font-weight:600;}
+  .filename a:hover{text-decoration:underline;}
+  .desc{color:var(--fg);}
+  .desc .zh-name{font-weight:600; display:block; margin-bottom:3px;}
+  .meta{color:var(--muted); font-size:12.5px; white-space:nowrap;}
+  .links a{color:var(--muted); text-decoration:none; font-size:12.5px; display:block; margin-bottom:3px;}
+  .links a:hover{color:var(--accent); text-decoration:underline;}
+  .stat{font-family:Consolas,monospace; font-size:12.5px;}
+  footer{color:var(--muted); font-size:12px; margin-top:50px; border-top:1px solid var(--border); padding-top:14px;}
+  @media (max-width:720px){
+    table, thead, tbody, tr, th, td{display:block;}
+    thead{display:none;}
+    tbody tr{padding:14px 0;}
+    tbody td{padding:4px 0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>📋 2GBack 系統規格文件總目錄</h1>
+  <div class="sub">ASP → 其他語言改寫參考｜Legacy ASP Rewrite Reference Catalog</div>
+</header>
+
+<div class="callout">
+本目錄彙整資料夾 <code>D:\2025\AI\2GBack</code> 內各模組的<b>系統規格文件</b>——由原始 Classic ASP 程式逆向解析而成，
+內容涵蓋資料模型、頁面流程、商業規則與已知程式缺陷，供 AI／工程師改寫成其他程式語言時直接參考，不需重新閱讀原始 Big5 編碼原始碼。
+</div>
+
+<div class="filters">
+  <button class="active" data-filter="all">📋 全部</button>
+  <button data-filter="code1">🗂 項目管理</button>
+  <button data-filter="code2">🧰 服務管理</button>
+</div>
+
+<table id="catalog">
+<thead>
+<tr>
+  <th>編號</th>
+  <th>模組</th>
+  <th>內容說明</th>
+  <th>規模</th>
+  <th>規格文件</th>
+  <th>更新日期</th>
+</tr>
+</thead>
+<tbody>
+<tr data-cat="code1">
+  <td class="idcell">01</td>
+  <td><span class="tag code1">code1</span></td>
+  <td class="desc">
+    <span class="zh-name">項目管理（Item / Code1）</span>
+    最上層分類代碼管理：查詢列表、新增、編輯（限未啟用）、停用（檢查下層 Code2）、暫停服務公告。
+  </td>
+  <td class="stat">8 個 ASP 檔<br>13 項已知缺陷</td>
+  <td class="links">
+    <a href="code1_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/code1_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-24</td>
+</tr>
+<tr data-cat="code2">
+  <td class="idcell">02</td>
+  <td><span class="tag code2">code2</span></td>
+  <td class="desc">
+    <span class="zh-name">服務管理（Service / Code2）</span>
+    Code1 底下第二層分類：查詢列表、新增、編輯（限未啟用）、停用（檢查下層 Code3）、暫停服務公告；含服務編號「99」互斥規則。
+  </td>
+  <td class="stat">8 個 ASP 檔<br>13 項已知缺陷</td>
+  <td class="links">
+    <a href="code2_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/code2_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-24</td>
+</tr>
+</tbody>
+</table>
+
+<footer>
+本目錄與各規格文件皆由 AI 輔助整理，內容以原始 ASP 原始碼行為為準；標示「推測」或「未知」之處代表原始碼未提供足夠資訊（外部 include、Stored Procedure 定義等），改寫前建議與熟悉舊系統的人員或 DBA 再次確認。
+</footer>
+</div>
+
+<script>
+document.querySelectorAll('.filters button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.filters button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var filter = btn.getAttribute('data-filter');
+    document.querySelectorAll('#catalog tbody tr').forEach(function(row){
+      row.style.display = (filter === 'all' || row.getAttribute('data-cat') === filter) ? '' : 'none';
+    });
+  });
+});
+</script>
+</body>
+</html>
