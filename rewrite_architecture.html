@@ -77,10 +77,15 @@
 後端語言：<b>ASP.NET Core (C#)</b>　｜　資料存取：<b>Dapper</b>　｜　1G/2G 模組關係：<b>分成兩個獨立 Bounded Context</b>（不強行合併 code1~3 與 code4~5 的資料模型）。
 以下內容以此技術棧為準；第7章仍保留 B 選項的比較供未來參考，但目前不採用。
 </p>
+<p class="callout bad">
+<strong>⚠️ 資料庫表格的資料與格式一律不可異動</strong>
+不只是「繼續用 MS SQL Server」這麼寬鬆的意思——<code>TB_GD_*</code>、<code>TB_ALEX_*</code> 等既有資料表的<b>欄位名稱、欄位型態、既有資料內容與既有格式慣例（例如 <code>Use_flag</code> 的 0/1/2 數值、<code>EndDate</code> 存檔時 +1 天的慣例、<code>groupid</code> 補零方式等）都必須原封不動保留</b>，不可因為改寫後台就順手「順便」調整資料庫 schema 或修改既有資料去配合新程式比較好寫。
+新系統的 Repository 層／Service 層要負責把這些舊有、有時反直覺的資料格式，轉換成應用層看得懂的乾淨模型（例如 6.1 節提到的 <code>Use_flag</code> enum 轉換），<b>轉換邏輯只能存在於應用層，不能透過改資料庫來讓問題「消失」</b>。若真的發現某個欄位格式已經造成嚴重維護負擔，需要先跟熟悉舊系統與其他仍在使用同一批資料表的系統（例如舊 ASP 頁面尚未下線期間）的相關人員確認後才能討論異動，不能自行決定。
+</p>
 
 <h2 id="overview">1. 核心原則</h2>
 <ul>
-  <li><b>資料庫完全不動</b>：延續現有 MS SQL Server、既有資料表（<code>TB_GD_*</code>、<code>TB_ALEX_*</code>）與既有 Stored Procedure（如 <code>SP_GD_StopMsgWork_ONDB_201104</code>）。</li>
+  <li><b>資料庫完全不動，資料與格式也一律不可異動</b>：延續現有 MS SQL Server、既有資料表（<code>TB_GD_*</code>、<code>TB_ALEX_*</code>）與既有 Stored Procedure（如 <code>SP_GD_StopMsgWork_ONDB_201104</code>）——不只是換一套程式接同一顆資料庫而已，欄位結構、既有資料內容、既有的資料格式慣例（<code>Use_flag</code> 數值、日期 +1 天慣例等）都要原樣保留，不可為了讓新程式好寫而修改 schema 或動既有資料。</li>
   <li><b>把「渲染 HTML／組SQL字串／商業規則」三件事拆開</b>——這是目前 ASP 檔案最大的問題，也是五份規格文件裡列出的多數缺陷（SQL Injection、規則各自為政、變數命名 bug）的根源。</li>
   <li><b>舊系統其實是兩個實質獨立的子系統</b>，新架構要能同時服務兩者，而不是硬併成一個：
     <ul>
