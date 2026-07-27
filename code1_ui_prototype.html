@@ -61,7 +61,17 @@
   }
   .sidebar-brand{margin:0 0 18px; padding:0 10px;}
   .sidebar-brand a{font-size:12.5px; color:var(--accent); text-decoration:none;}
-  .side-nav-title{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:4px 0 10px; padding:0 10px;}
+
+  .side-group summary{list-style:none; cursor:pointer;}
+  .side-group summary::-webkit-details-marker{display:none;}
+  .side-group-title{
+    display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:9px;
+    font-size:12.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;
+  }
+  .side-group-title:hover{background:var(--surface-alt); color:var(--fg);}
+  .side-group-title .chev{font-size:11px; transition:transform .15s; flex:none;}
+  .side-group[open] .side-group-title .chev{transform:rotate(90deg);}
+  .side-group-items{padding-top:2px;}
   .side-link{
     display:flex; align-items:center; justify-content:space-between; gap:8px;
     padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:600;
@@ -77,14 +87,7 @@
 
   @media (max-width:820px){
     .shell{flex-direction:column;}
-    .sidebar{
-      width:100%; height:auto; position:relative; border-right:none; border-bottom:1px solid var(--border);
-      display:flex; align-items:center; gap:14px; padding:14px 16px; overflow-x:auto;
-    }
-    .sidebar-brand{margin:0; padding:0; flex:none;}
-    .side-nav{display:flex; gap:6px; flex:1;}
-    .side-nav-title{display:none;}
-    .side-link{white-space:nowrap; margin-bottom:0;}
+    .sidebar{width:100%; height:auto; position:relative; border-right:none; border-bottom:1px solid var(--border);}
   }
 
   /* ---- top bar ---- */
@@ -287,12 +290,16 @@
   <aside class="sidebar">
     <div class="sidebar-brand"><a href="index.html">← 回到 2G 後台改寫 總目錄</a></div>
     <nav class="side-nav">
-      <div class="side-nav-title">選單管理</div>
-      <a href="code1_ui_prototype.html" class="side-link active">🗂 項目管理<span class="tag">Code1</span></a>
-      <a href="code2_ui_prototype.html" class="side-link">🧰 服務管理<span class="tag">Code2</span></a>
-      <span class="side-link disabled" title="尚未建置">🎫 票務管理<span class="tag">Code3</span></span>
-      <span class="side-link disabled" title="尚未建置">📍 地區管理<span class="tag">Code4</span></span>
-      <span class="side-link disabled" title="尚未建置">🏷 類型管理<span class="tag">Code5</span></span>
+      <details class="side-group">
+        <summary class="side-group-title"><span class="chev">▸</span> 選單管理</summary>
+        <div class="side-group-items">
+          <a href="code1_ui_prototype.html" class="side-link active">🗂 項目管理<span class="tag">Code1</span></a>
+          <a href="code2_ui_prototype.html" class="side-link">🧰 服務管理<span class="tag">Code2</span></a>
+          <span class="side-link disabled" title="尚未建置">🎫 票務管理<span class="tag">Code3</span></span>
+          <span class="side-link disabled" title="尚未建置">📍 地區管理<span class="tag">Code4</span></span>
+          <span class="side-link disabled" title="尚未建置">🏷 類型管理<span class="tag">Code5</span></span>
+        </div>
+      </details>
     </nav>
   </aside>
 
