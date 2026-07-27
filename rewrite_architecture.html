@@ -72,6 +72,11 @@
 資料庫（MS SQL Server）與既有資料表 / Stored Procedure 完全不變，本文件只討論應用層（後台程式）該用什麼架構改寫。
 內容基於 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code> 五份規格文件的分析結果整理而成。
 </p>
+<p class="callout warn">
+<strong>✅ 已確認技術棧（第7章三個決策點皆採用選項A）</strong>
+後端語言：<b>ASP.NET Core (C#)</b>　｜　資料存取：<b>Dapper</b>　｜　1G/2G 模組關係：<b>分成兩個獨立 Bounded Context</b>（不強行合併 code1~3 與 code4~5 的資料模型）。
+以下內容以此技術棧為準；第7章仍保留 B 選項的比較供未來參考，但目前不採用。
+</p>
 
 <h2 id="overview">1. 核心原則</h2>
 <ul>
@@ -87,9 +92,9 @@
 
 <h2 id="stack">2. 技術選型建議</h2>
 <table>
-<tr><th>層</th><th>建議技術</th><th>理由</th></tr>
-<tr><td>後端框架</td><td><b>ASP.NET Core (C#)</b></td><td>現有環境是 Windows/IIS/MSSQL，驅動與部署摩擦最小；團隊從 VBScript 過渡到 C# 學習曲線較平緩</td></tr>
-<tr><td>資料存取</td><td><b>Dapper</b>（輕量）或 <b>EF Core</b>（關聯查詢較多時）</td><td>兩者都支援參數化查詢與現有 Stored Procedure 呼叫，不需要資料庫改動</td></tr>
+<tr><th>層</th><th>採用技術</th><th>理由</th></tr>
+<tr><td>後端框架</td><td>✅ <b>ASP.NET Core (C#)</b></td><td>現有環境是 Windows/IIS/MSSQL，驅動與部署摩擦最小；團隊從 VBScript 過渡到 C# 學習曲線較平緩</td></tr>
+<tr><td>資料存取</td><td>✅ <b>Dapper</b></td><td>輕量、貼近原生SQL好對照舊查詢，支援參數化查詢與現有 Stored Procedure 呼叫，不需要資料庫改動</td></tr>
 <tr><td>前端</td><td><b>React 或 Vue 的 SPA</b>，呼叫後端 REST API</td><td>直接把已完成的 UI/UX 原型（code1、code2）接上真實 API</td></tr>
 <tr><td>認證</td><td>沿用 MSSQL 帳密表，改用 <b>JWT 或 Cookie Session</b> 簽發，取代舊有的 <code>Session("Cname")</code>／<code>chk_session2.asp</code></td><td>租戶（groupid）綁定登入身分，不再信任網址參數（修正各模組「D-04越權風險」類缺陷）</td></tr>
 </table>
@@ -143,14 +148,15 @@
 </ul>
 
 <h2 id="risks">7. 風險與取捨</h2>
+<p class="callout warn">以下三個決策點<b>皆已確認採用選項A</b>（打勾標示）；選項B僅保留供未來若情況改變時參考，目前不採用。</p>
 <table>
 <tr><th>決策點</th><th>選A</th><th>選B</th><th>取捨</th></tr>
-<tr><td>後端語言</td><td>ASP.NET Core (C#)</td><td>Node.js + TypeScript</td><td>A對現有Windows/IIS環境摩擦最小；B前端後端同語言、社群資源多，但Session/Windows驗證要多搬</td></tr>
-<tr><td>資料存取</td><td>Dapper</td><td>EF Core</td><td>A輕量、貼近原生SQL好對照舊查詢；B有變更追蹤/關聯載入等進階功能，但學習曲線較高</td></tr>
-<tr><td>1G/2G合併程度</td><td>分成兩個獨立Bounded Context</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
+<tr><td>後端語言</td><td>✅ ASP.NET Core (C#)</td><td>Node.js + TypeScript</td><td>A對現有Windows/IIS環境摩擦最小；B前端後端同語言、社群資源多，但Session/Windows驗證要多搬</td></tr>
+<tr><td>資料存取</td><td>✅ Dapper</td><td>EF Core</td><td>A輕量、貼近原生SQL好對照舊查詢；B有變更追蹤/關聯載入等進階功能，但學習曲線較高</td></tr>
+<tr><td>1G/2G合併程度</td><td>✅ 分成兩個獨立Bounded Context</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
 </table>
 
-<footer>本文件為架構建議，非最終決策；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性與優先順序。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
+<footer>本文件的技術棧已確認（見上方三項✅），其餘細節（模組遷移順序、優先項目）仍為建議性質；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
 
 </main>
 </div>

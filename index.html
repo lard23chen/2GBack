@@ -108,9 +108,9 @@
   <td><span class="tag code1" style="background:var(--tag2-bg);color:var(--tag2-fg);">架構</span></td>
   <td class="desc">
     <span class="zh-name">後台改寫架構建議（Rewrite Architecture）</span>
-    跨 code1~code5 的整體建議：技術選型（ASP.NET Core / Dapper）、分層架構、關鍵設計決策（狀態機顯式化、租戶範圍檢查、99互斥規則共用化等）、模組對照表與遷移策略。資料庫維持 MS SQL Server 不變。
+    跨 code1~code5 的整體建議：分層架構、關鍵設計決策（狀態機顯式化、租戶範圍檢查、99互斥規則共用化等）、模組對照表與遷移策略。資料庫維持 MS SQL Server 不變。
   </td>
-  <td class="stat">跨模組文件</td>
+  <td class="stat">✅ 技術棧已確認：<br>ASP.NET Core + Dapper<br>1G/2G獨立Bounded Context</td>
   <td class="links">
     <a href="rewrite_architecture.html">📄 架構建議文件 (HTML)</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/rewrite_architecture.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
