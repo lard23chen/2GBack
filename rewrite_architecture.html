@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>2GBack 後台改寫架構建議</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --warn-bg:#fff3e0; --warn-b:#f0b429;
+    --bad-bg:#fdecec; --bad-b:#e5484d; --ok-bg:#e8f7ee; --ok-b:#2f9e5b;
+    --nav-bg:#f7f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --warn-bg:#3a2e12; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-b:#b0454a; --ok-bg:#123321; --ok-b:#2f9e5b;
+      --nav-bg:#1a1d21;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; line-height:1.7;}
+  .layout{display:flex; min-height:100vh;}
+  nav.toc{width:260px; flex:0 0 260px; background:var(--nav-bg); border-right:1px solid var(--border); padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; font-size:13.5px;}
+  nav.toc h2{font-size:14px; color:var(--muted); margin:0 0 10px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:2px 0;}
+  nav.toc a{color:var(--fg); text-decoration:none; display:block; padding:4px 8px; border-radius:6px;}
+  nav.toc a:hover{background:var(--code-bg); color:var(--accent);}
+  nav.toc .sub{padding-left:14px; font-size:12.5px; color:var(--muted);}
+  main{flex:1; padding:36px 48px; max-width:1020px;}
+  h1{font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:12px;}
+  h2{font-size:20px; margin-top:48px; border-left:5px solid var(--accent); padding-left:10px;}
+  h3{font-size:16px; margin-top:28px; color:var(--accent);}
+  p{max-width:880px;}
+  code{background:var(--code-bg); padding:2px 5px; border-radius:4px; font-size:0.92em;}
+  pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; font-size:12.8px; line-height:1.55;}
+  pre code{background:none; padding:0;}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 45%, transparent);}
+  .callout{border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid var(--border);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-b);}
+  .callout.bad{background:var(--bad-bg); border-color:var(--bad-b);}
+  .callout.ok{background:var(--ok-bg); border-color:var(--ok-b);}
+  .callout strong{display:block; margin-bottom:4px;}
+  .flow{font-family:"Consolas",monospace; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:16px; white-space:pre; overflow-x:auto; font-size:13px;}
+  .toc-h1{font-weight:700; margin-top:10px;}
+  footer{color:var(--muted); font-size:12px; margin-top:60px; border-top:1px solid var(--border); padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li class="toc-h1"><a href="#overview">1. 核心原則</a></li>
+    <li class="toc-h1"><a href="#stack">2. 技術選型建議</a></li>
+    <li class="toc-h1"><a href="#layers">3. 分層架構</a></li>
+    <li class="toc-h1"><a href="#decisions">4. 關鍵設計決策</a></li>
+    <li class="toc-h1"><a href="#mapping">5. 現有模組對照表</a></li>
+    <li class="toc-h1"><a href="#migration">6. 遷移策略</a></li>
+    <li class="toc-h1"><a href="#risks">7. 風險與取捨</a></li>
+  </ol>
+</nav>
+<main>
+
+<h1>2GBack 後台改寫架構建議</h1>
+<p class="callout ok">
+<strong>前提</strong>
+資料庫（MS SQL Server）與既有資料表 / Stored Procedure 完全不變，本文件只討論應用層（後台程式）該用什麼架構改寫。
+內容基於 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code> 五份規格文件的分析結果整理而成。
+</p>
+
+<h2 id="overview">1. 核心原則</h2>
+<ul>
+  <li><b>資料庫完全不動</b>：延續現有 MS SQL Server、既有資料表（<code>TB_GD_*</code>、<code>TB_ALEX_*</code>）與既有 Stored Procedure（如 <code>SP_GD_StopMsgWork_ONDB_201104</code>）。</li>
+  <li><b>把「渲染 HTML／組SQL字串／商業規則」三件事拆開</b>——這是目前 ASP 檔案最大的問題，也是五份規格文件裡列出的多數缺陷（SQL Injection、規則各自為政、變數命名 bug）的根源。</li>
+  <li><b>舊系統其實是兩個實質獨立的子系統</b>，新架構要能同時服務兩者，而不是硬併成一個：
+    <ul>
+      <li><b>1G 主系統</b>（code1~code3，<code>TB_GD_*</code>，對應舊連線 <code>conn</code>/<code>conn0</code>）</li>
+      <li><b>2G 票務中心</b>（code4~code5，<code>TB_ALEX_*</code>，對應舊連線 <code>conn3</code>，外加寫入 <code>conn</code> 的稽核 log）</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="stack">2. 技術選型建議</h2>
+<table>
+<tr><th>層</th><th>建議技術</th><th>理由</th></tr>
+<tr><td>後端框架</td><td><b>ASP.NET Core (C#)</b></td><td>現有環境是 Windows/IIS/MSSQL，驅動與部署摩擦最小；團隊從 VBScript 過渡到 C# 學習曲線較平緩</td></tr>
+<tr><td>資料存取</td><td><b>Dapper</b>（輕量）或 <b>EF Core</b>（關聯查詢較多時）</td><td>兩者都支援參數化查詢與現有 Stored Procedure 呼叫，不需要資料庫改動</td></tr>
+<tr><td>前端</td><td><b>React 或 Vue 的 SPA</b>，呼叫後端 REST API</td><td>直接把已完成的 UI/UX 原型（code1、code2）接上真實 API</td></tr>
+<tr><td>認證</td><td>沿用 MSSQL 帳密表，改用 <b>JWT 或 Cookie Session</b> 簽發，取代舊有的 <code>Session("Cname")</code>／<code>chk_session2.asp</code></td><td>租戶（groupid）綁定登入身分，不再信任網址參數（修正各模組「D-04越權風險」類缺陷）</td></tr>
+</table>
+<p class="callout warn"><strong>備選方案</strong>若團隊更偏好 JS/TS 全端，可用 <b>Node.js + Fastify/Express + Prisma</b> 取代 ASP.NET Core，一樣能接同一個 MSSQL；主要代價是 Windows 整合驗證與既有 Session 機制要多花力氣搬遷。</p>
+
+<h2 id="layers">3. 分層架構</h2>
+<div class="flow">┌─────────────────────────────────────────┐
+│  前端 SPA（React/Vue）                    │  ← 對應目前的 *_ui_prototype.html
+├─────────────────────────────────────────┤
+│  API 層（Controller）                     │  路由、參數驗證、HTTP狀態碼
+├─────────────────────────────────────────┤
+│  Service 層（商業規則）                    │  ← 規格文件第8章「商業規則彙整」都搬到這裡
+│  - ItemService / ServiceService /         │
+│    BrandService / RegionService /         │
+│    TypeService（對應 Code1~Code5）        │
+│  - SuspensionNoticeService（暫停公告，     │
+│    含 EndDate ±1天 換算，五個模組共用一套） │
+├─────────────────────────────────────────┤
+│  Repository 層（資料存取）                 │  Dapper/EF Core，參數化查詢
+│  - 對應現有 TB_GD_* / TB_ALEX_* 資料表      │
+│  - 包裝既有 Stored Procedure              │
+├─────────────────────────────────────────┤
+│  MS SQL Server（不變）                     │
+└─────────────────────────────────────────┘
+</div>
+
+<h2 id="decisions">4. 關鍵設計決策（對應規格文件發現的問題）</h2>
+<ol>
+  <li><b>狀態機顯式化：</b><code>Use_flag</code> 0/1(/2待上架) 改成具名 enum（<code>Active/Inactive/PendingListing</code>），在 Repository 層做資料庫值↔enum 的轉換，Service 層不再看到魔術數字。</li>
+  <li><b>租戶範圍強制檢查：</b>所有 Repository 查詢都要求傳入登入者的 <code>groupId</code>，不再讓前端網址參數決定範圍。</li>
+  <li><b>保留碼（99）互斥規則抽成共用函式：</b>Code1~Code5 各模組都有類似但實作深度不一的99規則（code1只警告、code2真的互斥、code3~code5各有缺陷），先跟需求方確認正確行為後，寫成一個共用的 <code>assertReservedCodeExclusivity()</code>。</li>
+  <li><b>雙資料庫寫入包成一個 Unit of Work：</b>code4/code5 模組會同時寫 <code>conn3</code>（主檔）和 <code>conn</code>（稽核log），改寫後用交易或至少確保失敗時有重試/補償，不要像現在「log失敗使用者也看不出來」。</li>
+  <li><b>驗證規則前後端共用一份定義：</b>如 Zod/FluentValidation，取代目前五個模組各自複製貼上的 JS 黑名單字元檢查。</li>
+</ol>
+
+<h2 id="mapping">5. 現有模組對照表</h2>
+<table>
+<tr><th>舊模組</th><th>資料表</th><th>新 Service</th><th>備註</th></tr>
+<tr><td>code1（項目管理）</td><td><code>TB_GD_RepairCode1_200501</code></td><td><code>ItemService</code></td><td>最單純、依賴最少，建議第一個遷移</td></tr>
+<tr><td>code2（服務管理）</td><td><code>TB_GD_RepairCode2_200501</code></td><td><code>ServiceService</code></td><td>含保留碼99雙向互斥規則</td></tr>
+<tr><td>code3（品牌管理）</td><td><code>TB_GD_RepairCode3_200501</code></td><td><code>BrandService</code></td><td>含1支孤兒處理器，遷移前需確認規則取捨</td></tr>
+<tr><td>code4（地區管理，2G）</td><td><code>TB_ALEX_RepairCode4_200601</code></td><td><code>RegionService</code></td><td>三態狀態機、1G/2G欄位分工</td></tr>
+<tr><td>code5（類型管理，2G）</td><td><code>TB_ALEX_RepairCode5_200601</code></td><td><code>TypeService</code></td><td>下接真實商品/票券資料表</td></tr>
+</table>
+
+<h2 id="migration">6. 遷移策略</h2>
+<ul>
+  <li><b>按模組垂直切</b>，不要整包重寫：先做 code1（項目管理），驗證整套新架構（認證、分層、與舊DB共存）可行，再依樣套用到 code2~code5。</li>
+  <li><b>新舊系統並存過渡期</b>：新 API 與舊 ASP 頁面同時指向同一個資料庫，舊頁面逐步下線，降低一次性風險。</li>
+  <li><b>1G 與 2G 分成兩個 Bounded Context</b>，共用同一套認證/租戶機制，但資料模型與 Service 層分開維護，不要為了「看起來像同一套代碼」而勉強合併 Code1~3 和 Code4~5。</li>
+</ul>
+
+<h2 id="risks">7. 風險與取捨</h2>
+<table>
+<tr><th>決策點</th><th>選A</th><th>選B</th><th>取捨</th></tr>
+<tr><td>後端語言</td><td>ASP.NET Core (C#)</td><td>Node.js + TypeScript</td><td>A對現有Windows/IIS環境摩擦最小；B前端後端同語言、社群資源多，但Session/Windows驗證要多搬</td></tr>
+<tr><td>資料存取</td><td>Dapper</td><td>EF Core</td><td>A輕量、貼近原生SQL好對照舊查詢；B有變更追蹤/關聯載入等進階功能，但學習曲線較高</td></tr>
+<tr><td>1G/2G合併程度</td><td>分成兩個獨立Bounded Context</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
+</table>
+
+<footer>本文件為架構建議，非最終決策；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性與優先順序。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
+
+</main>
+</div>
+</body>
+</html>
