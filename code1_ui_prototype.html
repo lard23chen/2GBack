@@ -55,6 +55,17 @@
   }
   .app{max-width:1180px; margin:0 auto; padding:28px 24px 80px;}
 
+  /* ---- module switch tabs ---- */
+  .module-nav{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  .module-nav a, .module-nav span{
+    display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:9px;
+    font-size:13px; font-weight:600; text-decoration:none; border:1px solid var(--border);
+    background:var(--surface); color:var(--muted); white-space:nowrap;
+  }
+  .module-nav a:hover{border-color:var(--border-strong); color:var(--fg);}
+  .module-nav a.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent);}
+  .module-nav span.disabled{opacity:.5; cursor:not-allowed;}
+
   /* ---- top bar ---- */
   .topbar{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -253,6 +264,14 @@
 <div class="app">
 
   <a href="index.html" style="display:inline-block; font-size:12.5px; color:var(--accent); text-decoration:none; margin-bottom:10px;">← 回到 2G 後台改寫 總目錄</a>
+
+  <div class="module-nav">
+    <a href="code1_ui_prototype.html" class="active">🗂 項目管理 Code1</a>
+    <a href="code2_ui_prototype.html">🧰 服務管理 Code2</a>
+    <span class="disabled" title="尚未建置">🎫 票務管理 Code3</span>
+    <span class="disabled" title="尚未建置">📍 地區管理 Code4</span>
+    <span class="disabled" title="尚未建置">🏷 類型管理 Code5</span>
+  </div>
 
   <div class="topbar">
     <div class="title">
