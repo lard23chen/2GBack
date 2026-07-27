@@ -53,17 +53,39 @@
     font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
     line-height:1.6; font-size:14.5px;
   }
-  .app{max-width:1180px; margin:0 auto; padding:28px 24px 80px;}
-
-  .module-nav{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
-  .module-nav a, .module-nav span{
-    display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:9px;
-    font-size:13px; font-weight:600; text-decoration:none; border:1px solid var(--border);
-    background:var(--surface); color:var(--muted); white-space:nowrap;
+  /* ---- shell / sidebar ---- */
+  .shell{display:flex; min-height:100vh; align-items:flex-start;}
+  .sidebar{
+    width:220px; flex:0 0 220px; background:var(--surface); border-right:1px solid var(--border);
+    padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto;
   }
-  .module-nav a:hover{border-color:var(--border-strong); color:var(--fg);}
-  .module-nav a.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent);}
-  .module-nav span.disabled{opacity:.5; cursor:not-allowed;}
+  .sidebar-brand{margin:0 0 18px; padding:0 10px;}
+  .sidebar-brand a{font-size:12.5px; color:var(--accent); text-decoration:none;}
+  .side-nav-title{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:4px 0 10px; padding:0 10px;}
+  .side-link{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:600;
+    color:var(--muted); text-decoration:none; margin-bottom:3px;
+  }
+  .side-link:hover{background:var(--surface-alt); color:var(--fg);}
+  .side-link.active{background:var(--accent); color:var(--accent-fg);}
+  .side-link .tag{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:5px; background:var(--surface-alt); color:var(--muted);}
+  .side-link.active .tag{background:rgba(255,255,255,0.25); color:inherit;}
+  .side-link.disabled{opacity:.45; cursor:not-allowed;}
+
+  .app{flex:1; min-width:0; max-width:1180px; padding:28px 24px 80px;}
+
+  @media (max-width:820px){
+    .shell{flex-direction:column;}
+    .sidebar{
+      width:100%; height:auto; position:relative; border-right:none; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:14px; padding:14px 16px; overflow-x:auto;
+    }
+    .sidebar-brand{margin:0; padding:0; flex:none;}
+    .side-nav{display:flex; gap:6px; flex:1;}
+    .side-nav-title{display:none;}
+    .side-link{white-space:nowrap; margin-bottom:0;}
+  }
 
   .topbar{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -260,17 +282,21 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="shell">
 
-  <a href="index.html" style="display:inline-block; font-size:12.5px; color:var(--accent); text-decoration:none; margin-bottom:10px;">← 回到 2G 後台改寫 總目錄</a>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><a href="index.html">← 回到 2G 後台改寫 總目錄</a></div>
+    <nav class="side-nav">
+      <div class="side-nav-title">選單管理</div>
+      <a href="code1_ui_prototype.html" class="side-link">🗂 項目管理<span class="tag">Code1</span></a>
+      <a href="code2_ui_prototype.html" class="side-link active">🧰 服務管理<span class="tag">Code2</span></a>
+      <span class="side-link disabled" title="尚未建置">🎫 票務管理<span class="tag">Code3</span></span>
+      <span class="side-link disabled" title="尚未建置">📍 地區管理<span class="tag">Code4</span></span>
+      <span class="side-link disabled" title="尚未建置">🏷 類型管理<span class="tag">Code5</span></span>
+    </nav>
+  </aside>
 
-  <div class="module-nav">
-    <a href="code1_ui_prototype.html">🗂 項目管理 Code1</a>
-    <a href="code2_ui_prototype.html" class="active">🧰 服務管理 Code2</a>
-    <span class="disabled" title="尚未建置">🎫 票務管理 Code3</span>
-    <span class="disabled" title="尚未建置">📍 地區管理 Code4</span>
-    <span class="disabled" title="尚未建置">🏷 類型管理 Code5</span>
-  </div>
+  <div class="app">
 
   <div class="topbar">
     <div class="title">
@@ -345,6 +371,8 @@
     <a href="code2_system_spec.html">查看規格文件</a> ・
     <a href="code1_ui_prototype.html">項目管理原型</a>
   </footer>
+  </div>
+
 </div>
 
 <!-- Add / Edit modal -->
