@@ -82,17 +82,27 @@
 不只是「繼續用 MS SQL Server」這麼寬鬆的意思——<code>TB_GD_*</code>、<code>TB_ALEX_*</code> 等既有資料表的<b>欄位名稱、欄位型態、既有資料內容與既有格式慣例（例如 <code>Use_flag</code> 的 0/1/2 數值、<code>EndDate</code> 存檔時 +1 天的慣例、<code>groupid</code> 補零方式等）都必須原封不動保留</b>，不可因為改寫後台就順手「順便」調整資料庫 schema 或修改既有資料去配合新程式比較好寫。
 新系統的 Repository 層／Service 層要負責把這些舊有、有時反直覺的資料格式，轉換成應用層看得懂的乾淨模型（例如 6.1 節提到的 <code>Use_flag</code> enum 轉換），<b>轉換邏輯只能存在於應用層，不能透過改資料庫來讓問題「消失」</b>。若真的發現某個欄位格式已經造成嚴重維護負擔，需要先跟熟悉舊系統與其他仍在使用同一批資料表的系統（例如舊 ASP 頁面尚未下線期間）的相關人員確認後才能討論異動，不能自行決定。
 </p>
+<p class="callout bad">
+<strong>⚠️ v2 發現：code1~code3 已遷移到「2G票務中心」資料庫，1G/2G分界需重新確認</strong>
+撰寫本文件初版時，code1~code3 使用 <code>TB_GD_*</code> 資料表（對應本文件原本定義的「1G主系統」）。之後追蹤 <code>code1_system_spec.html</code>／<code>code2_system_spec.html</code>／<code>code3_system_spec.html</code> 的 v2 改版才發現：這三個模組的 ASP 原始碼<b>已經改接 <code>TB_ALEX_RepairCode1~3_200501</code></b>（經 <code>conn3</code>，<code>ALEX_TICKET_200602</code>），與 code4/code5 共用同一套「2G票務中心」schema、三態狀態機（啟用/停用/待上架）、預售期間欄位與雙資料庫稽核寫入。
+這代表本文件第1章與第5章原本「code1~3是1G（<code>TB_GD_*</code>）、code4~5是2G（<code>TB_ALEX_*</code>）」的分界描述<b>已經過時</b>，已於下方對應章節更新；但目前<b>尚未確認</b> <code>TB_GD_RepairCode1~3_200501</code> 這些舊表是否還有其他系統在讀寫——若還有，1G系統本身可能仍存在，只是code1~3後台改由新架構代管，改寫時務必先與熟悉舊系統的人員確認，不能自行假設舊表已可廢棄。
+</p>
+<p class="callout warn">
+<strong>⚠️ 與已建置的 2GBack-api 試作後端的落差</strong>
+目前已實際建置的 code1/code2 REST API 試作專案（私有 repo <code>2GBack-api</code>），是在發現上述 v2 遷移<b>之前</b>依照舊架構建立的，其連線資訊指向 <code>GD_SALES_BARK_200412</code> 資料庫的 <code>TB_GD_RepairCode1/2_200501</code> 表（即v1架構）。
+若之後要延續、修正或擴充該試作專案，需要先與需求方確認：正式改寫究竟該對接 <code>GD_SALES_BARK_200412</code>（v1舊表）還是 <code>ALEX_TICKET_200602</code> 的 <code>TB_ALEX_RepairCode1/2_200501</code>（目前ASP原始碼實際在用的v2新表）——這是本文件目前唯一尚待確認、可能影響既有試作程式碼是否需要重新對接的開放問題。
+</p>
 
 <h2 id="overview">1. 核心原則</h2>
 <ul>
   <li><b>資料庫完全不動，資料與格式也一律不可異動</b>：延續現有 MS SQL Server、既有資料表（<code>TB_GD_*</code>、<code>TB_ALEX_*</code>）與既有 Stored Procedure（如 <code>SP_GD_StopMsgWork_ONDB_201104</code>）——不只是換一套程式接同一顆資料庫而已，欄位結構、既有資料內容、既有的資料格式慣例（<code>Use_flag</code> 數值、日期 +1 天慣例等）都要原樣保留，不可為了讓新程式好寫而修改 schema 或動既有資料。</li>
   <li><b>把「渲染 HTML／組SQL字串／商業規則」三件事拆開</b>——這是目前 ASP 檔案最大的問題，也是五份規格文件裡列出的多數缺陷（SQL Injection、規則各自為政、變數命名 bug）的根源。</li>
-  <li><b>舊系統其實是兩個實質獨立的子系統</b>，新架構要能同時服務兩者，而不是硬併成一個：
+  <li><b>⚠️（v2更新）原「1G/2G以模組編號分界」的假設已過時</b>：code1~code3 的 ASP 原始碼經追蹤後已確認全部改接 <code>TB_ALEX_*</code>（經 <code>conn3</code>，<code>ALEX_TICKET_200602</code>），與 code4~code5 共用同一套「2G票務中心」schema、三態狀態機與稽核log機制，不再是「code1~3用<code>TB_GD_*</code>」。目前 <code>code1~code5</code> 在應用層看到的實際主資料表現況為：
     <ul>
-      <li><b>1G 主系統</b>（code1~code3，<code>TB_GD_*</code>，對應舊連線 <code>conn</code>/<code>conn0</code>）</li>
-      <li><b>2G 票務中心</b>（code4~code5，<code>TB_ALEX_*</code>，對應舊連線 <code>conn3</code>，外加寫入 <code>conn</code> 的稽核 log）</li>
+      <li><b>2G 票務中心（現況，code1~code5 皆在此）</b>：<code>TB_ALEX_RepairCode1~5_*</code>，經 <code>conn3</code>（<code>ALEX_TICKET_200602</code>），外加寫入 <code>conn</code> 的稽核 log（<code>TB_GD_UserClick_Log_200507</code>）</li>
+      <li><b>舊 <code>TB_GD_RepairCode1~3_*</code> 表（<code>GD_SALES_BARK_200412</code>）</b>：現行 code1~3 的 ASP 頁面已不再讀寫，但尚未確認是否有其他系統仍在使用——不可假設可廢棄，需求方確認前先視為仍存在的獨立資料集合</li>
     </ul>
-  </li>
+    第7章「1G/2G合併程度」決策點的原始理由（避免混淆<code>TB_GD</code>與<code>TB_ALEX</code>）因此需要重新檢視，目前傾向：新後端統一對接 <code>ALEX_TICKET_200602</code>／<code>conn3</code> 這一套2G票務中心schema即可，不需要再刻意維持兩個Bounded Context——但這牽動已建置的 <code>2GBack-api</code> 試作專案（見上方callout），需要與需求方確認後才能定案，本文件先如實記錄此開放問題。</li>
 </ul>
 
 <h2 id="stack">2. 技術選型建議</h2>
@@ -136,20 +146,23 @@
 </ol>
 
 <h2 id="mapping">5. 現有模組對照表</h2>
+<p class="callout warn">⚠️ 下表已依 v2 規格文件更新為 code1~code3 目前實際使用的 <code>TB_ALEX_*</code> 資料表；<code>TB_GD_RepairCode1~3_*</code> 為舊表，現行ASP頁面已不再讀寫（但用途尚待需求方確認，見上方callout）。</p>
 <table>
-<tr><th>舊模組</th><th>資料表</th><th>新 Service</th><th>備註</th></tr>
-<tr><td>code1（項目管理）</td><td><code>TB_GD_RepairCode1_200501</code></td><td><code>ItemService</code></td><td>最單純、依賴最少，建議第一個遷移</td></tr>
-<tr><td>code2（服務管理）</td><td><code>TB_GD_RepairCode2_200501</code></td><td><code>ServiceService</code></td><td>含保留碼99雙向互斥規則</td></tr>
-<tr><td>code3（品牌管理）</td><td><code>TB_GD_RepairCode3_200501</code></td><td><code>BrandService</code></td><td>含1支孤兒處理器，遷移前需確認規則取捨</td></tr>
+<tr><th>舊模組</th><th>資料表（v2現況，均經<code>conn3</code>/<code>ALEX_TICKET_200602</code>）</th><th>新 Service</th><th>備註</th></tr>
+<tr><td>code1（項目管理）</td><td><code>TB_ALEX_RepairCode1_200501</code></td><td><code>ItemService</code></td><td>最單純、依賴最少，建議第一個遷移；三態狀態機+預售期間欄位</td></tr>
+<tr><td>code2（品牌管理，原稱服務）</td><td><code>TB_ALEX_RepairCode2_200501</code></td><td><code>ServiceService</code></td><td>含保留碼99雙向互斥規則；title與內文用語混用「品牌/服務」</td></tr>
+<tr><td>code3（票務管理，原稱品牌）</td><td><code>TB_ALEX_RepairCode3_200501</code></td><td><code>BrandService</code></td><td>v2已補齊新增/編輯的重複與99互斥檢查（v1原本完全缺失）；累積2支孤兒檔案</td></tr>
 <tr><td>code4（地區管理，2G）</td><td><code>TB_ALEX_RepairCode4_200601</code></td><td><code>RegionService</code></td><td>三態狀態機、1G/2G欄位分工</td></tr>
 <tr><td>code5（類型管理，2G）</td><td><code>TB_ALEX_RepairCode5_200601</code></td><td><code>TypeService</code></td><td>下接真實商品/票券資料表</td></tr>
 </table>
+<p class="callout ok"><strong>備註</strong>由於code1~code5目前均落在同一套 <code>ALEX_TICKET_200602</code> schema，右方「新Service」欄位的命名（ServiceService／BrandService）沿用舊模組英文代稱，改寫時建議依§0各模組規格文件的中文定名（品牌/票務）重新命名類別，避免代稱與畫面用語不一致的問題延續到新系統。</p>
 
 <h2 id="migration">6. 遷移策略</h2>
 <ul>
   <li><b>按模組垂直切</b>，不要整包重寫：先做 code1（項目管理），驗證整套新架構（認證、分層、與舊DB共存）可行，再依樣套用到 code2~code5。</li>
   <li><b>新舊系統並存過渡期</b>：新 API 與舊 ASP 頁面同時指向同一個資料庫，舊頁面逐步下線，降低一次性風險。</li>
-  <li><b>1G 與 2G 分成兩個 Bounded Context</b>，共用同一套認證/租戶機制，但資料模型與 Service 層分開維護，不要為了「看起來像同一套代碼」而勉強合併 Code1~3 和 Code4~5。</li>
+  <li><b>（v2更新）1G/2G Bounded Context 分界需重新確認</b>：原建議是「1G（code1~3）與2G（code4~5）分成兩個獨立Bounded Context」，但既然code1~3已證實改接與code4~5相同的 <code>ALEX_TICKET_200602</code> schema，這個分界的原始依據已不成立。除非需求方確認舊<code>TB_GD_RepairCode1~3_*</code>表仍有其他系統在用（代表1G系統本身仍存在，只是不再由code1~3後台代管），否則新架構可考慮以單一Bounded Context處理code1~5，降低不必要的重複建模成本。</li>
+  <li><b>試作進度與v2發現不同步，需要對齊</b>：已建置的 <code>2GBack-api</code>（code1/code2）目前對接的是v1舊表 <code>GD_SALES_BARK_200412</code>；在往code3~code5擴充或正式投產前，應先與需求方確認是否要把 <code>2GBack-api</code> 也改接 <code>ALEX_TICKET_200602</code>／<code>TB_ALEX_RepairCode1/2_200501</code>，以符合目前ASP原始碼實際在用的架構，避免新舊系統各自對接不同資料表造成資料不一致。</li>
 </ul>
 
 <h2 id="risks">7. 風險與取捨</h2>
@@ -158,10 +171,11 @@
 <tr><th>決策點</th><th>選A</th><th>選B</th><th>取捨</th></tr>
 <tr><td>後端語言</td><td>✅ ASP.NET Core (C#)</td><td>Node.js + TypeScript</td><td>A對現有Windows/IIS環境摩擦最小；B前端後端同語言、社群資源多，但Session/Windows驗證要多搬</td></tr>
 <tr><td>資料存取</td><td>✅ Dapper</td><td>EF Core</td><td>A輕量、貼近原生SQL好對照舊查詢；B有變更追蹤/關聯載入等進階功能，但學習曲線較高</td></tr>
-<tr><td>1G/2G合併程度</td><td>✅ 分成兩個獨立Bounded Context</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
+<tr><td>1G/2G合併程度</td><td>✅ 分成兩個獨立Bounded Context（<span style="color:var(--bad-b);">⚠️前提已變，見下方說明</span>）</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
 </table>
+<p class="callout bad"><strong>⚠️「1G/2G合併程度」決策的前提已被v2發現推翻，需要重新確認</strong>此決策當初是依據「code1~3用<code>TB_GD_*</code>是1G、code4~5用<code>TB_ALEX_*</code>是2G」畫分。現已證實code1~3也改接<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>，五個模組實際上共用同一套schema，「兩個獨立Bounded Context」的原始理由不再成立。是否仍要維持兩個Context（例如因為業務語意上1G/2G仍是兩套產品線，即使資料庫共用）、或改採單一Bounded Context，屬於需要與需求方重新確認的決策，本文件先誠實記錄、不預先變更選項A的勾選狀態。</p>
 
-<footer>本文件的技術棧已確認（見上方三項✅），其餘細節（模組遷移順序、優先項目）仍為建議性質；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
+<footer>本文件的技術棧已確認（見上方三項✅），其餘細節（模組遷移順序、優先項目）仍為建議性質；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性。本次更新反映 <code>code1_system_spec.html</code>／<code>code2_system_spec.html</code>／<code>code3_system_spec.html</code> 的 v2 改版發現（code1~3已migrate到<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>），1G/2G Bounded Context分界與既有<code>2GBack-api</code>試作的資料庫對接目標皆列為待需求方確認的開放問題。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
 
 </main>
 </div>
