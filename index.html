@@ -136,13 +136,13 @@
   <td class="idcell">02</td>
   <td><span class="tag code2">code2</span></td>
   <td class="desc">
-    <span class="zh-name">服務管理（Service / Code2）</span>
-    Code1 底下第二層分類：查詢列表、新增、編輯（限未啟用）、停用（檢查下層 Code3）、暫停服務公告；含服務編號「99」互斥規則。
+    <span class="zh-name">品牌管理（原稱 Service / Code2）</span> <span style="color:var(--tag2-fg);font-size:11px;">v2</span>
+    ⚠ 已改接「2G票務中心」架構（<code>TB_ALEX_RepairCode2_200501</code>，經 <code>conn3</code>）；新增三態狀態機、預售期間欄位、品牌名稱重複檢查；title已改「品牌管理」但內文用語仍混用「服務」。
   </td>
-  <td class="stat">8 個 ASP 檔<br>12 項已知缺陷</td>
+  <td class="stat">10 個 ASP 檔<br>7 項已知缺陷</td>
   <td class="links">
     <a href="code2_system_spec.html">📄 規格文件 (HTML)</a>
-    <a href="code2_ui_prototype.html">🖥️ 後台 UI/UX 原型</a>
+    <a href="code2_ui_prototype.html">🖥️ 後台 UI/UX 原型（依v1舊架構，尚未更新）</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/code2_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
   </td>
   <td class="meta">2026-07-27</td>
@@ -151,15 +151,15 @@
   <td class="idcell">03</td>
   <td><span class="tag code2" style="background:var(--tag1-bg);color:var(--tag1-fg);">code3</span></td>
   <td class="desc">
-    <span class="zh-name">品牌管理（Brand / Code3）</span>
-    Code2 底下第三層分類：查詢列表、新增、編輯（限未啟用）、停用（檢查下層商品明細）、暫停服務公告；實作完整度低於 code1/code2，含 1 支孤兒處理器檔案。
+    <span class="zh-name">票務管理（原稱 Brand / Code3）</span> <span style="color:var(--tag2-fg);font-size:11px;">v2</span>
+    Code2 底下第三層分類，本次改版<b>大幅補齊</b>新增/編輯的重複與99互斥檢查（v1原本完全缺失）；新增三態狀態機、預售期間欄位；累積至2支孤兒檔案。
   </td>
-  <td class="stat">9 個 ASP 檔（含1支孤兒）<br>10 項已知缺陷</td>
+  <td class="stat">12 個 ASP 檔（含2支孤兒）<br>7 項已知缺陷</td>
   <td class="links">
     <a href="code3_system_spec.html">📄 規格文件 (HTML)</a>
     <a href="https://github.com/lard23chen/2GBack/blob/main/code3_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
   </td>
-  <td class="meta">2026-07-24</td>
+  <td class="meta">2026-07-27</td>
 </tr>
 <tr data-cat="code4">
   <td class="idcell">04</td>
