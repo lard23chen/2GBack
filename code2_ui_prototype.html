@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服務管理（Code2）— 後台 UI/UX 原型</title>
+<style>
+  :root{
+    --bg:#eef1f4; --surface:#ffffff; --surface-alt:#f5f7f9; --fg:#182129; --muted:#66707c;
+    --border:#dde2e8; --border-strong:#c7cfd7;
+    --accent:#0f6f6a; --accent-fg:#ffffff; --accent-soft:#e1f2f0; --accent-soft-fg:#0b5450;
+    --ok-bg:#e6f6ec; --ok-fg:#1a7f4e; --ok-b:#3fb573;
+    --warn-bg:#fff6e5; --warn-fg:#93650a; --warn-b:#e3a008;
+    --bad-bg:#fdecec; --bad-fg:#b3261e; --bad-b:#e5484d;
+    --shadow:0 8px 28px rgba(20,30,40,0.10);
+    --shadow-lg:0 20px 60px rgba(15,20,26,0.28);
+    --radius:12px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12161b; --surface:#1b2028; --surface-alt:#20262f; --fg:#e7ebef; --muted:#9aa5b1;
+      --border:#2c333c; --border-strong:#3a4149;
+      --accent:#4fc2b8; --accent-fg:#0b1512; --accent-soft:#173430; --accent-soft-fg:#7fe0d3;
+      --ok-bg:#123321; --ok-fg:#5fd992; --ok-b:#2f9e5b;
+      --warn-bg:#3a2e12; --warn-fg:#f0c266; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-fg:#ff8a85; --bad-b:#b0454a;
+      --shadow:0 8px 28px rgba(0,0,0,0.35);
+      --shadow-lg:0 24px 64px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161b; --surface:#1b2028; --surface-alt:#20262f; --fg:#e7ebef; --muted:#9aa5b1;
+    --border:#2c333c; --border-strong:#3a4149;
+    --accent:#4fc2b8; --accent-fg:#0b1512; --accent-soft:#173430; --accent-soft-fg:#7fe0d3;
+    --ok-bg:#123321; --ok-fg:#5fd992; --ok-b:#2f9e5b;
+    --warn-bg:#3a2e12; --warn-fg:#f0c266; --warn-b:#a9770f;
+    --bad-bg:#3a1a1a; --bad-fg:#ff8a85; --bad-b:#b0454a;
+    --shadow:0 8px 28px rgba(0,0,0,0.35); --shadow-lg:0 24px 64px rgba(0,0,0,0.55);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f4; --surface:#ffffff; --surface-alt:#f5f7f9; --fg:#182129; --muted:#66707c;
+    --border:#dde2e8; --border-strong:#c7cfd7;
+    --accent:#0f6f6a; --accent-fg:#ffffff; --accent-soft:#e1f2f0; --accent-soft-fg:#0b5450;
+    --ok-bg:#e6f6ec; --ok-fg:#1a7f4e; --ok-b:#3fb573;
+    --warn-bg:#fff6e5; --warn-fg:#93650a; --warn-b:#e3a008;
+    --bad-bg:#fdecec; --bad-fg:#b3261e; --bad-b:#e5484d;
+    --shadow:0 8px 28px rgba(20,30,40,0.10); --shadow-lg:0 20px 60px rgba(15,20,26,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+    line-height:1.6; font-size:14.5px;
+  }
+  .app{max-width:1180px; margin:0 auto; padding:28px 24px 80px;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px 20px; box-shadow:var(--shadow); margin-bottom:20px; flex-wrap:wrap;
+  }
+  .topbar .title{display:flex; align-items:baseline; gap:10px;}
+  .topbar h1{font-size:19px; margin:0; font-weight:800;}
+  .topbar .sub{color:var(--muted); font-size:12.5px;}
+  .tenant-chip{
+    display:flex; align-items:center; gap:8px; background:var(--surface-alt);
+    border:1px solid var(--border); border-radius:20px; padding:6px 14px 6px 8px; font-size:12.8px;
+  }
+  .tenant-chip .dot{width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none;}
+  .tenant-chip b{font-weight:700;}
+  .tenant-chip .lock{color:var(--muted); font-size:11px;}
+
+  .banner{
+    background:var(--accent-soft); color:var(--accent-soft-fg); border:1px solid var(--accent);
+    border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; font-size:13px;
+  }
+  .banner summary{cursor:pointer; font-weight:700; list-style:none; display:flex; align-items:center; gap:8px;}
+  .banner summary::-webkit-details-marker{display:none;}
+  .banner summary .chev{transition:transform .15s;}
+  .banner[open] summary .chev{transform:rotate(90deg);}
+  .banner ul{margin:10px 0 2px; padding-left:20px;}
+  .banner li{margin:4px 0;}
+  .banner code{background:rgba(0,0,0,0.08); padding:1px 5px; border-radius:4px; font-size:12px;}
+
+  .toolbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .search{position:relative; flex:1; min-width:220px; max-width:340px;}
+  .search input{
+    width:100%; padding:9px 14px 9px 34px; border-radius:10px; border:1px solid var(--border);
+    background:var(--surface); color:var(--fg); font-size:13.5px;
+  }
+  .search input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .search .icon{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px;}
+  .parent-filter select{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--surface); color:var(--fg); font-size:13.3px; min-width:170px;
+  }
+  .seg{display:flex; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px;}
+  .seg button{
+    border:none; background:none; color:var(--muted); padding:7px 13px; border-radius:8px; font-size:13px;
+    cursor:pointer; font-weight:600;
+  }
+  .seg button.active{background:var(--surface); color:var(--fg); box-shadow:0 1px 3px rgba(0,0,0,0.12);}
+  .spacer{flex:1;}
+  .btn{
+    border:none; border-radius:9px; padding:9px 16px; font-size:13.5px; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; transition:transform .08s, filter .1s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent); color:var(--accent-fg);}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-ghost{background:var(--surface); color:var(--fg); border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--border-strong);}
+  .btn-sm{padding:6px 11px; font-size:12.5px; border-radius:7px;}
+  .btn-danger{background:var(--bad-bg); color:var(--bad-fg); border:1px solid var(--bad-b);}
+  .btn[disabled]{opacity:.45; cursor:not-allowed;}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  table{width:100%; border-collapse:collapse; font-size:13.3px;}
+  thead th{
+    text-align:left; padding:11px 14px; background:var(--surface-alt); color:var(--muted);
+    font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  tbody td{padding:11px 14px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-alt);}
+  .empty-row td{text-align:center; color:var(--muted); padding:40px 0;}
+  .item-cell{display:flex; align-items:center; gap:10px;}
+  .thumb{
+    width:32px; height:32px; border-radius:8px; background:var(--surface-alt); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:14px; flex:none; overflow:hidden;
+  }
+  .thumb img{width:100%; height:100%; object-fit:cover;}
+  .item-name{font-weight:700;}
+  .item-code{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums;}
+  .parent-name{font-size:12.5px;}
+  .parent-name .tag{color:var(--muted); font-size:11px;}
+  .mono{font-variant-numeric:tabular-nums; font-family:Consolas,monospace;}
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px;
+    font-size:12px; font-weight:700; white-space:nowrap;
+  }
+  .pill::before{content:""; width:6px; height:6px; border-radius:50%;}
+  .pill.ok{background:var(--ok-bg); color:var(--ok-fg);}
+  .pill.ok::before{background:var(--ok-b);}
+  .pill.warn{background:var(--warn-bg); color:var(--warn-fg);}
+  .pill.warn::before{background:var(--warn-b);}
+  .pill.bad{background:var(--bad-bg); color:var(--bad-fg);}
+  .pill.bad::before{background:var(--bad-b);}
+  .reserved-tag{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--accent-soft-fg);
+    background:var(--accent-soft); border-radius:6px; padding:2px 7px; margin-left:6px;
+  }
+  .notice-tag{
+    display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--warn-fg);
+    background:var(--warn-bg); border-radius:6px; padding:2px 7px; margin-top:4px;
+  }
+  .row-actions{display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;}
+  .rowid{color:var(--muted); font-size:12px;}
+
+  .pager{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; font-size:12.5px; color:var(--muted); flex-wrap:wrap; gap:10px;}
+  .pager .pages{display:flex; gap:4px;}
+  .pager button{
+    border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:7px;
+    width:28px; height:28px; font-size:12.5px; cursor:pointer; font-variant-numeric:tabular-nums;
+  }
+  .pager button.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent);}
+  .pager button[disabled]{opacity:.35; cursor:not-allowed;}
+
+  .backdrop{
+    position:fixed; inset:0; background:rgba(10,14,18,0.5); display:none; align-items:center; justify-content:center;
+    padding:20px; z-index:50; backdrop-filter:blur(2px);
+  }
+  .backdrop.show{display:flex;}
+  .modal{
+    background:var(--surface); border-radius:16px; box-shadow:var(--shadow-lg); width:100%; max-width:520px;
+    max-height:88vh; overflow-y:auto; border:1px solid var(--border);
+  }
+  .modal.wide{max-width:600px;}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border);}
+  .modal-head h2{font-size:16.5px; margin:0; font-weight:800;}
+  .modal-head .x{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; line-height:1; padding:4px;}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{display:flex; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid var(--border);}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.8px; font-weight:700; margin-bottom:6px; color:var(--fg);}
+  .field .hint{font-size:11.8px; color:var(--muted); margin-top:5px;}
+  .field .err{font-size:11.8px; color:var(--bad-fg); margin-top:5px; display:none;}
+  .field.has-err .err{display:block;}
+  .field.has-err input, .field.has-err textarea, .field.has-err select{border-color:var(--bad-b);}
+  .field input[type=text], .field input[type=number], .field select, .field textarea, .field input[type=datetime-local]{
+    width:100%; padding:9px 12px; border-radius:9px; border:1px solid var(--border);
+    background:var(--surface); color:var(--fg); font-size:13.5px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .field textarea{resize:vertical; min-height:64px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .radio-group{display:flex; gap:16px;}
+  .radio-opt{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;}
+  .counter{font-size:11.5px; color:var(--muted); text-align:right; margin-top:4px;}
+  .counter.over{color:var(--bad-fg); font-weight:700;}
+  .upload-row{display:flex; align-items:center; gap:12px;}
+  .upload-preview{
+    width:52px; height:52px; border-radius:10px; border:1px dashed var(--border-strong); background:var(--surface-alt);
+    display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; flex:none;
+  }
+  .upload-preview img{width:100%; height:100%; object-fit:cover;}
+  .inline-note{
+    display:flex; gap:8px; align-items:flex-start; background:var(--warn-bg); color:var(--warn-fg);
+    border:1px solid var(--warn-b); border-radius:9px; padding:10px 12px; font-size:12.6px; margin-bottom:16px;
+  }
+  .inline-note.bad{background:var(--bad-bg); color:var(--bad-fg); border-color:var(--bad-b);}
+  .inline-note.ok{background:var(--ok-bg); color:var(--ok-fg); border-color:var(--ok-b);}
+  .readonly-grid{display:grid; grid-template-columns:120px 1fr; gap:8px 14px; font-size:13.3px; margin-bottom:14px;}
+  .readonly-grid div:nth-child(odd){color:var(--muted);}
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .switch{position:relative; width:42px; height:24px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .track{position:absolute; inset:0; background:var(--border-strong); border-radius:20px; cursor:pointer; transition:background .15s;}
+  .switch .knob{position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform .15s; box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+  .switch input:checked + .track{background:var(--accent);}
+  .switch input:checked + .track .knob{transform:translateX(18px);}
+
+  .toasts{position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:80; max-width:320px;}
+  .toast{
+    background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--accent);
+    border-radius:10px; padding:12px 14px; box-shadow:var(--shadow-lg); font-size:13px;
+    display:flex; gap:10px; align-items:flex-start; animation:slidein .18s ease-out;
+  }
+  .toast.ok{border-left-color:var(--ok-b);}
+  .toast.bad{border-left-color:var(--bad-b);}
+  .toast .ic{flex:none;}
+  @keyframes slidein{from{opacity:0; transform:translateX(16px);} to{opacity:1; transform:translateX(0);}}
+
+  footer.page-footer{color:var(--muted); font-size:12px; text-align:center; margin-top:28px;}
+  footer.page-footer a{color:var(--accent);}
+
+  @media (max-width:720px){
+    .field-row{grid-template-columns:1fr;}
+    table thead{display:none;}
+    table, tbody, tr, td{display:block; width:100%;}
+    tbody tr{border-bottom:8px solid var(--bg); padding:10px 4px;}
+    tbody td{border:none; padding:4px 10px;}
+    .row-actions{justify-content:flex-start; margin-top:6px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="title">
+      <h1>🧰 服務管理</h1>
+      <span class="sub">Code2 · 項目底下第二層代碼</span>
+    </div>
+    <div class="tenant-chip">
+      <span class="dot"></span>
+      目前業者：<b>0088　安源測試租戶</b>
+      <span class="lock">🔒 依登入身分鎖定</span>
+    </div>
+  </div>
+
+  <details class="banner">
+    <summary><span class="chev">▶</span> 這是什麼？與舊版 <code>code2.asp</code> 後台的差異說明</summary>
+    <p style="margin:10px 0 0;">
+      本頁是依 <a href="code2_system_spec.html" style="color:inherit;">code2_system_spec.html</a> 規格文件重新設計的 UI/UX 原型（純前端假資料展示，未接後端）。
+      在保留原有商業規則的前提下，改善了以下操作體驗：
+    </p>
+    <ul>
+      <li>「服務」永遠掛在一個所屬項目下方顯示，並提供「項目別」篩選，不必再從一長串列表裡自己對照代碼（對應規格 §5 的三層下拉）</li>
+      <li>服務編號「99」的互斥規則（規格 §8：新增/修改99時若已有其他啟用中服務要擋、反之亦然）在新增與編輯表單中<b>即時顯示提示並在送出前擋下</b>，不必送出後才看到錯誤（修正 D2-12 兩處各自維護邏輯不一致的風險）</li>
+      <li>重複檢查一律以目前登入業者為範圍，不會像舊版 <code>code2mod.asp</code> 那樣誤用其他欄位做比對（修正 D2-06）</li>
+      <li>新增服務時的特殊符號／單引號檢查對「服務編號、服務名稱」本身生效（修正 D2-05 檢查錯欄位、防注入形同虛設的問題）</li>
+      <li>若所屬項目已被停用，直接鎖住「編輯」與「暫停公告」入口並顯示原因，不會像舊版那樣讓伺服器在空資料上出錯（修正 D2-08）</li>
+      <li>停用前若底下仍有啟用中的品牌代碼（Code3），直接在確認視窗顯示原因並鎖住送出鍵</li>
+      <li>狀態一律顯示文字＋色點；暫停公告的日期換算、25字限制與 code1 原型一致</li>
+    </ul>
+  </details>
+
+  <div class="toolbar">
+    <div class="search">
+      <span class="icon">🔍</span>
+      <input id="searchInput" type="text" placeholder="搜尋服務編號或名稱…">
+    </div>
+    <div class="parent-filter">
+      <select id="parentFilter">
+        <option value="">項目別：全部</option>
+      </select>
+    </div>
+    <div class="seg" id="statusSeg">
+      <button class="active" data-status="all">全部</button>
+      <button data-status="active">使用中</button>
+      <button data-status="inactive">未啟用</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="btnAdd">＋ 新增服務</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>服務</th>
+          <th>系統編號</th>
+          <th>所屬項目</th>
+          <th>狀態</th>
+          <th style="text-align:right;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager">
+      <span id="pagerInfo"></span>
+      <div class="pages" id="pagerPages"></div>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    UI/UX 原型・僅供介面操作流程展示，資料為前端假資料，重新整理後會還原 ・
+    <a href="index.html">回總目錄</a> ・
+    <a href="code2_system_spec.html">查看規格文件</a> ・
+    <a href="code1_ui_prototype.html">項目管理原型</a>
+  </footer>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="backdrop" id="backdropForm">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="formTitle">新增服務</h2>
+      <button class="x" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="inline-note" id="note99" style="display:none;">
+        ⚠️ 服務編號 <b>99</b> 為保留代碼，與同一項目下其他啟用中的服務<b>互斥</b>：設為99前，該項目底下必須沒有任何啟用中的其他服務；反之若99已啟用中，也無法再新增/啟用其他服務。
+      </div>
+      <div class="field" id="fParent">
+        <label>所屬項目</label>
+        <select id="inputParent"></select>
+        <div class="err">請選擇所屬項目</div>
+        <div class="hint">下拉僅列出目前啟用中、且項目編號不為99的項目。</div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="fItemCode">
+          <label>服務編號（2 碼數字）</label>
+          <input type="text" id="inputItemCode" maxlength="2" placeholder="例如 01">
+          <div class="err">請輸入 1～2 碼數字</div>
+        </div>
+        <div class="field">
+          <label>啟用狀態</label>
+          <div class="radio-group" style="margin-top:9px;">
+            <label class="radio-opt"><input type="radio" name="useFlag" value="active"> 使用中</label>
+            <label class="radio-opt"><input type="radio" name="useFlag" value="inactive" checked> 未啟用</label>
+          </div>
+        </div>
+      </div>
+      <div class="field" id="fItemName">
+        <label>服務名稱（15 字以內，不可含空白與特殊符號）</label>
+        <input type="text" id="inputItemName" maxlength="15" placeholder="例如 外送到府">
+        <div class="err">名稱不可為空、含空白或特殊符號 ` ^ " @ ! &amp; . # % * ( ) + - '</div>
+      </div>
+      <div class="field">
+        <label>服務圖示（.jpg / .gif）</label>
+        <div class="upload-row">
+          <div class="upload-preview" id="uploadPreview">🖼</div>
+          <input type="file" id="inputPic" accept=".jpg,.jpeg,.gif">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-primary" id="btnFormSubmit">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deactivate confirm modal -->
+<div class="backdrop" id="backdropDeactivate">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>停用服務</h2>
+      <button class="x" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="readonly-grid" id="deactivateInfo"></div>
+      <div class="inline-note bad" id="deactivateBlock" style="display:none;">
+        ⛔ 此服務底下仍有 <b id="blockCount">0</b> 個啟用中的品牌代碼（Code3），無法停用。請先到「品牌管理」停用底下的品牌代碼後再回來。
+      </div>
+      <div class="inline-note ok" id="deactivateOk" style="display:none;">
+        ✅ 已確認底下沒有啟用中的品牌代碼，可以安全停用。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-danger" id="btnDeactivateConfirm">確認停用</button>
+    </div>
+  </div>
+</div>
+
+<!-- Suspension notice modal -->
+<div class="backdrop" id="backdropNotice">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h2>暫停服務公告</h2>
+      <button class="x" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="readonly-grid" id="noticeInfo"></div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:700; font-size:13.5px;">公告啟用</div>
+          <div class="hint" style="margin-top:2px;">關閉時可先暫存內容，不檢查時間是否合理</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="noticeEnable">
+          <span class="track"><span class="knob"></span></span>
+        </label>
+      </div>
+      <div class="field-row">
+        <div class="field" id="fBegin">
+          <label>公告啟用時間</label>
+          <input type="datetime-local" id="inputBegin">
+          <div class="err">啟用時間需晚於現在</div>
+        </div>
+        <div class="field" id="fEnd">
+          <label>公告結束時間</label>
+          <input type="datetime-local" id="inputEnd">
+          <div class="err">結束時間需晚於啟用時間與現在</div>
+        </div>
+      </div>
+      <div class="field" id="fMsg">
+        <label>公告內容</label>
+        <textarea id="inputMsg" maxlength="25" placeholder="例如：因系統維護暫停服務"></textarea>
+        <div class="counter" id="msgCounter">0 / 25</div>
+        <div class="err">請輸入公告內容</div>
+      </div>
+      <div class="hint">畫面上的日期已是您理解的「最後生效日」，實際存檔換算由系統內部處理，不會顯示反直覺的日期。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-primary" id="btnNoticeSubmit">儲存公告</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BLACKLIST = /[`^"@!&.#%*()+\-']/;
+
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+  function toLocalInput(d){
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  var now = new Date();
+  function plusDays(base, days){ var d=new Date(base); d.setDate(d.getDate()+days); return d; }
+  function plusHours(base, hours){ var d=new Date(base); d.setHours(d.getHours()+hours); return d; }
+
+  // 延續 code1 原型的項目清單（只有啟用中、且項目編號不為99的項目才能被選為「所屬項目」）
+  var PARENTS = [
+    { code1:"C1024", item1:"001", name:"生活百貨精選", active:true },
+    { code1:"C1025", item1:"002", name:"熱門餐飲組合", active:true },
+    { code1:"C1026", item1:"003", name:"3C周邊特賣", active:false },
+    { code1:"C1027", item1:"010", name:"親子育兒優選", active:true },
+    { code1:"C1028", item1:"099", name:"保留代碼測試", active:false },
+    { code1:"C1030", item1:"006", name:"限時餐飲快閃", active:true }
+  ];
+  function parentByCode1(code1){
+    for(var i=0;i<PARENTS.length;i++) if(PARENTS[i].code1===code1) return PARENTS[i];
+    return null;
+  }
+  function selectableParents(){
+    return PARENTS.filter(function(p){ return p.active && p.item1!=="99"; });
+  }
+
+  var nextId = 2041;
+  var items = [
+    { code2:"S2031", item2:"01", name:"到府安裝", parentCode1:"C1024", pic:null, active:true, childActiveCount:1, notice:null },
+    { code2:"S2032", item2:"02", name:"門市自取", parentCode1:"C1024", pic:null, active:true, childActiveCount:0, notice:{ enabled:true, begin:plusHours(now,1), end:plusDays(now,2), msg:"因系統維護暫停服務" } },
+    { code2:"S2033", item2:"01", name:"外送到府", parentCode1:"C1025", pic:null, active:true, childActiveCount:0, notice:null },
+    { code2:"S2034", item2:"99", name:"活動限定組合", parentCode1:"C1025", pic:null, active:true, childActiveCount:0, notice:null },
+    { code2:"S2035", item2:"05", name:"預約到店", parentCode1:"C1027", pic:null, active:false, childActiveCount:0, notice:null },
+    { code2:"S2036", item2:"03", name:"快閃取貨", parentCode1:"C1030", pic:null, active:true, childActiveCount:2, notice:null },
+    { code2:"S2037", item2:"04", name:"停用測試服務", parentCode1:"C1030", pic:null, active:false, childActiveCount:0, notice:{ enabled:false, begin:plusDays(now,-4), end:plusDays(now,-1), msg:"年度盤點" } }
+  ];
+
+  var state = { search:"", status:"all", parent:"", page:1, pageSize:5 };
+
+  function fillParentFilter(){
+    var sel = document.getElementById("parentFilter");
+    PARENTS.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.code1;
+      opt.textContent = p.item1+" "+p.name+(p.active?"":"（已停用）");
+      sel.appendChild(opt);
+    });
+  }
+  function fillParentSelect(){
+    var sel = document.getElementById("inputParent");
+    sel.innerHTML = '<option value="">請選擇</option>';
+    selectableParents().forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.code1;
+      opt.textContent = p.item1+" "+p.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function filtered(){
+    return items.filter(function(it){
+      if(state.status==="active" && !it.active) return false;
+      if(state.status==="inactive" && it.active) return false;
+      if(state.parent && it.parentCode1!==state.parent) return false;
+      if(state.search){
+        var q = state.search.toLowerCase();
+        if(it.item2.indexOf(q)===-1 && it.name.toLowerCase().indexOf(q)===-1) return false;
+      }
+      return true;
+    });
+  }
+
+  function render(){
+    var list = filtered();
+    var totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+    if(state.page > totalPages) state.page = totalPages;
+    var start = (state.page-1) * state.pageSize;
+    var pageItems = list.slice(start, start+state.pageSize);
+
+    var tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+    if(pageItems.length===0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">沒有符合條件的服務</td></tr>';
+    } else {
+      pageItems.forEach(function(it){
+        var parent = parentByCode1(it.parentCode1);
+        var statusPill = it.active
+          ? '<span class="pill ok">使用中</span>'
+          : '<span class="pill warn">未啟用</span>';
+        var noticeTag = "";
+        if(it.notice && it.notice.enabled){
+          noticeTag = '<div class="notice-tag">📢 公告中</div>';
+        }
+        var reserved = it.item2==="99" ? '<span class="reserved-tag">保留碼</span>' : "";
+        var parentBlocked = parent && !parent.active;
+        var actions = "";
+        if(it.active){
+          actions += '<button class="btn btn-sm btn-danger" data-act="deactivate" data-id="'+it.code2+'">停用</button>';
+        } else if(parentBlocked){
+          actions += '<button class="btn btn-sm btn-ghost" disabled title="所屬項目已停用，需先重新啟用項目">編輯</button>';
+        } else {
+          actions += '<button class="btn btn-sm btn-ghost" data-act="edit" data-id="'+it.code2+'">編輯</button>';
+        }
+        if(parentBlocked){
+          actions += '<button class="btn btn-sm btn-ghost" disabled title="所屬項目已停用，無法設定暫停公告">暫停公告</button>';
+        } else {
+          actions += '<button class="btn btn-sm btn-ghost" data-act="notice" data-id="'+it.code2+'">暫停公告</button>';
+        }
+
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td><div class="item-cell"><div class="thumb">'+(it.pic ? '<img src="'+it.pic+'">' : '🧾')+'</div>'+
+          '<div><div class="item-name">'+escapeHtml(it.name)+reserved+'</div><div class="item-code mono">編號 '+it.item2+'</div></div></div></td>'+
+          '<td class="mono rowid">'+it.code2+'</td>'+
+          '<td><div class="parent-name">'+(parent ? escapeHtml(parent.name) : "（項目已刪除）")+
+            (parentBlocked ? ' <span class="tag">⚠ 項目已停用</span>' : '')+'</div></td>'+
+          '<td>'+statusPill+noticeTag+'</td>'+
+          '<td><div class="row-actions">'+actions+'</div></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("pagerInfo").textContent =
+      list.length===0 ? "共 0 筆" : ("顯示 "+(start+1)+"–"+Math.min(start+pageItems.length, list.length)+"，共 "+list.length+" 筆");
+
+    var pagesWrap = document.getElementById("pagerPages");
+    pagesWrap.innerHTML = "";
+    var prev = document.createElement("button");
+    prev.textContent = "‹"; prev.disabled = state.page<=1;
+    prev.onclick = function(){ state.page--; render(); };
+    pagesWrap.appendChild(prev);
+    for(var p=1; p<=totalPages; p++){
+      (function(p){
+        var b = document.createElement("button");
+        b.textContent = p;
+        if(p===state.page) b.className="active";
+        b.onclick = function(){ state.page=p; render(); };
+        pagesWrap.appendChild(b);
+      })(p);
+    }
+    var next = document.createElement("button");
+    next.textContent = "›"; next.disabled = state.page>=totalPages;
+    next.onclick = function(){ state.page++; render(); };
+    pagesWrap.appendChild(next);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function findItem(code2){
+    for(var i=0;i<items.length;i++) if(items[i].code2===code2) return items[i];
+    return null;
+  }
+
+  function toast(msg, type){
+    var wrap = document.getElementById("toasts");
+    var el = document.createElement("div");
+    el.className = "toast"+(type?" "+type:"");
+    var icon = type==="ok" ? "✅" : type==="bad" ? "⛔" : "ℹ️";
+    el.innerHTML = '<span class="ic">'+icon+'</span><span>'+escapeHtml(msg)+'</span>';
+    wrap.appendChild(el);
+    setTimeout(function(){
+      el.style.transition = "opacity .25s, transform .25s";
+      el.style.opacity = "0"; el.style.transform = "translateX(16px)";
+      setTimeout(function(){ el.remove(); }, 250);
+    }, 3200);
+  }
+
+  document.getElementById("searchInput").addEventListener("input", function(e){
+    state.search = e.target.value.trim();
+    state.page = 1;
+    render();
+  });
+  document.getElementById("parentFilter").addEventListener("change", function(e){
+    state.parent = e.target.value;
+    state.page = 1;
+    render();
+  });
+  document.getElementById("statusSeg").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-status]");
+    if(!btn) return;
+    document.querySelectorAll("#statusSeg button").forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    state.status = btn.getAttribute("data-status");
+    state.page = 1;
+    render();
+  });
+
+  function openModal(id){ document.getElementById(id).classList.add("show"); }
+  function closeModal(id){ document.getElementById(id).classList.remove("show"); }
+  document.querySelectorAll(".backdrop").forEach(function(bd){
+    bd.addEventListener("click", function(e){ if(e.target===bd) bd.classList.remove("show"); });
+    bd.querySelectorAll("[data-close]").forEach(function(b){
+      b.addEventListener("click", function(){ bd.classList.remove("show"); });
+    });
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape"){
+      document.querySelectorAll(".backdrop.show").forEach(function(bd){ bd.classList.remove("show"); });
+    }
+  });
+
+  // ---- Add / Edit form ----
+  var formMode = "add";
+  var formTargetCode2 = null;
+
+  function clearFieldErrors(){
+    ["fParent","fItemCode","fItemName"].forEach(function(id){
+      document.getElementById(id).classList.remove("has-err");
+    });
+  }
+
+  function openAddForm(){
+    formMode = "add"; formTargetCode2 = null;
+    document.getElementById("formTitle").textContent = "新增服務";
+    fillParentSelect();
+    document.getElementById("inputParent").value = state.parent || "";
+    document.getElementById("inputItemCode").value = "";
+    document.getElementById("inputItemName").value = "";
+    document.getElementById("inputPic").value = "";
+    document.getElementById("uploadPreview").innerHTML = "🖼";
+    document.querySelector('input[name="useFlag"][value="inactive"]').checked = true;
+    document.getElementById("note99").style.display = "none";
+    clearFieldErrors();
+    openModal("backdropForm");
+  }
+
+  function openEditForm(code2){
+    var it = findItem(code2);
+    if(!it) return;
+    if(it.active){ toast("使用中的服務無法編輯，請先停用", "bad"); return; }
+    var parent = parentByCode1(it.parentCode1);
+    if(parent && !parent.active){ toast("所屬項目已停用，請先將項目重新啟用後再編輯", "bad"); return; }
+    formMode = "edit"; formTargetCode2 = code2;
+    document.getElementById("formTitle").textContent = "編輯服務 · "+it.code2;
+    fillParentSelect();
+    // 編輯時所屬項目維持原值，即使該項目不在「可選清單」中也要能顯示
+    var sel = document.getElementById("inputParent");
+    if(![].some.call(sel.options, function(o){ return o.value===it.parentCode1; })){
+      var opt = document.createElement("option");
+      opt.value = it.parentCode1;
+      opt.textContent = (parent ? parent.item1+" "+parent.name : it.parentCode1)+"（不可變更）";
+      sel.appendChild(opt);
+    }
+    sel.value = it.parentCode1;
+    sel.disabled = true; // 舊系統UPDATE不會改動code1，所屬項目建立後不可變更
+    document.getElementById("inputItemCode").value = it.item2;
+    document.getElementById("inputItemName").value = it.name;
+    document.getElementById("inputPic").value = "";
+    document.getElementById("uploadPreview").innerHTML = it.pic ? '<img src="'+it.pic+'">' : "🧾";
+    document.querySelector('input[name="useFlag"][value="'+(it.active?"active":"inactive")+'"]').checked = true;
+    document.getElementById("note99").style.display = it.item2==="99" ? "flex" : "none";
+    clearFieldErrors();
+    openModal("backdropForm");
+  }
+
+  document.getElementById("btnAdd").addEventListener("click", openAddForm);
+
+  document.getElementById("inputItemCode").addEventListener("input", function(e){
+    document.getElementById("note99").style.display = e.target.value.trim()==="99" ? "flex" : "none";
+  });
+
+  document.getElementById("btnFormSubmit").addEventListener("click", function(){
+    clearFieldErrors();
+    var parentCode1 = document.getElementById("inputParent").value;
+    var code = document.getElementById("inputItemCode").value.trim();
+    var name = document.getElementById("inputItemName").value.trim();
+    var useFlag = document.querySelector('input[name="useFlag"]:checked').value;
+    var ok = true;
+
+    if(!parentCode1){
+      document.getElementById("fParent").classList.add("has-err"); ok = false;
+    }
+    if(!/^[0-9]{1,2}$/.test(code)){
+      document.getElementById("fItemCode").classList.add("has-err"); ok = false;
+    }
+    if(!name || BLACKLIST.test(name) || /\s/.test(name)){
+      document.getElementById("fItemName").classList.add("has-err"); ok = false;
+    }
+    if(!ok) return;
+
+    var siblingsActive = items.filter(function(it){
+      return it.parentCode1===parentCode1 && it.active && it.code2!==formTargetCode2;
+    });
+
+    if(code==="99"){
+      // 新增/啟用為99：該項目下不能已有其他啟用中的服務
+      if(siblingsActive.length>0){
+        toast("此項目已有其他啟用中的服務，無法將服務編號設為 99！", "bad");
+        return;
+      }
+    } else {
+      // 一般編號：該項目下不能已有啟用中的 99
+      var has99Active = siblingsActive.some(function(it){ return it.item2==="99"; });
+      if(has99Active && useFlag==="active"){
+        toast("此項目已有啟用中的服務編號 99，其他服務無法同時啟用！", "bad");
+        return;
+      }
+      var dup = siblingsActive.some(function(it){ return it.item2===code; });
+      if(dup && useFlag==="active"){
+        toast("服務編號 "+code+" 在此項目下已存在且為使用中狀態，無法儲存", "bad");
+        return;
+      }
+    }
+
+    if(formMode==="add"){
+      items.unshift({
+        code2: "S"+(nextId++), item2: code, name: name, parentCode1: parentCode1,
+        pic:null, active: useFlag==="active", childActiveCount:0, notice:null
+      });
+      toast("新增成功！", "ok");
+    } else {
+      var it = findItem(formTargetCode2);
+      it.item2 = code; it.name = name; it.active = useFlag==="active";
+      toast("修改成功！", "ok");
+    }
+    closeModal("backdropForm");
+    state.page = 1;
+    render();
+  });
+
+  // ---- Deactivate ----
+  var deactivateTarget = null;
+  function openDeactivate(code2){
+    var it = findItem(code2);
+    if(!it) return;
+    var parent = parentByCode1(it.parentCode1);
+    deactivateTarget = code2;
+    document.getElementById("deactivateInfo").innerHTML =
+      "<div>系統編號</div><div class=\"mono\">"+it.code2+"</div>"+
+      "<div>服務編號</div><div class=\"mono\">"+it.item2+"</div>"+
+      "<div>服務名稱</div><div>"+escapeHtml(it.name)+"</div>"+
+      "<div>所屬項目</div><div>"+(parent?escapeHtml(parent.name):"—")+"</div>";
+    var blocked = it.childActiveCount > 0;
+    document.getElementById("deactivateBlock").style.display = blocked ? "flex" : "none";
+    document.getElementById("deactivateOk").style.display = blocked ? "none" : "flex";
+    document.getElementById("blockCount").textContent = it.childActiveCount;
+    document.getElementById("btnDeactivateConfirm").disabled = blocked;
+    openModal("backdropDeactivate");
+  }
+  document.getElementById("btnDeactivateConfirm").addEventListener("click", function(){
+    var it = findItem(deactivateTarget);
+    if(!it) return;
+    it.active = false;
+    toast("已停用「"+it.name+"」", "ok");
+    closeModal("backdropDeactivate");
+    render();
+  });
+
+  // ---- Suspension notice ----
+  var noticeTarget = null;
+  function openNotice(code2){
+    var it = findItem(code2);
+    if(!it) return;
+    var parent = parentByCode1(it.parentCode1);
+    noticeTarget = code2;
+    document.getElementById("noticeInfo").innerHTML =
+      "<div>服務</div><div>"+escapeHtml(it.name)+"（"+it.item2+"）</div>"+
+      "<div>所屬項目</div><div>"+(parent?escapeHtml(parent.name):"—")+"</div>"+
+      "<div>目前狀態</div><div>"+(it.active ? '<span class="pill ok">使用中</span>' : '<span class="pill warn">未啟用</span>')+"</div>";
+    var n = it.notice || { enabled:false, begin: plusHours(now,1), end: plusDays(now,1), msg:"" };
+    document.getElementById("noticeEnable").checked = !!n.enabled;
+    document.getElementById("inputBegin").value = toLocalInput(n.begin);
+    document.getElementById("inputEnd").value = toLocalInput(n.end);
+    document.getElementById("inputMsg").value = n.msg;
+    updateMsgCounter();
+    ["fBegin","fEnd","fMsg"].forEach(function(id){ document.getElementById(id).classList.remove("has-err"); });
+    openModal("backdropNotice");
+  }
+  function updateMsgCounter(){
+    var len = document.getElementById("inputMsg").value.length;
+    var c = document.getElementById("msgCounter");
+    c.textContent = len+" / 25";
+    c.classList.toggle("over", len>25);
+  }
+  document.getElementById("inputMsg").addEventListener("input", updateMsgCounter);
+
+  document.getElementById("btnNoticeSubmit").addEventListener("click", function(){
+    ["fBegin","fEnd","fMsg"].forEach(function(id){ document.getElementById(id).classList.remove("has-err"); });
+    var enabled = document.getElementById("noticeEnable").checked;
+    var beginVal = document.getElementById("inputBegin").value;
+    var endVal = document.getElementById("inputEnd").value;
+    var msg = document.getElementById("inputMsg").value.trim();
+    var begin = beginVal ? new Date(beginVal) : null;
+    var end = endVal ? new Date(endVal) : null;
+    var ok = true;
+
+    if(!msg || msg.length>25 || BLACKLIST.test(msg)){
+      document.getElementById("fMsg").classList.add("has-err"); ok = false;
+    }
+    if(enabled){
+      var nowCheck = new Date();
+      if(!begin || begin <= nowCheck){ document.getElementById("fBegin").classList.add("has-err"); ok = false; }
+      if(!end || (begin && end <= begin) || end <= nowCheck){ document.getElementById("fEnd").classList.add("has-err"); ok = false; }
+    }
+    if(!ok) return;
+
+    var it = findItem(noticeTarget);
+    it.notice = { enabled: enabled, begin: begin, end: end, msg: msg };
+    toast("暫停公告已儲存", "ok");
+    closeModal("backdropNotice");
+    render();
+  });
+
+  // ---- table action delegation ----
+  document.getElementById("tbody").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    var id = btn.getAttribute("data-id");
+    var act = btn.getAttribute("data-act");
+    if(act==="edit") openEditForm(id);
+    else if(act==="deactivate") openDeactivate(id);
+    else if(act==="notice") openNotice(id);
+  });
+
+  fillParentFilter();
+  render();
+})();
+</script>
+</body>
+</html>
