@@ -104,7 +104,7 @@
       <li><b>2G 票務中心（現況，code1~code5 皆在此）</b>：<code>TB_ALEX_RepairCode1~5_*</code>，經 <code>conn3</code>（<code>ALEX_TICKET_200602</code>），外加寫入 <code>conn</code> 的稽核 log（<code>TB_GD_UserClick_Log_200507</code>）</li>
       <li><b>舊 <code>TB_GD_RepairCode1~3_*</code> 表（<code>GD_SALES_BARK_200412</code>）</b>：現行 code1~3 的 ASP 頁面已不再讀寫，但尚未確認是否有其他系統仍在使用——不可假設可廢棄，需求方確認前先視為仍存在的獨立資料集合</li>
     </ul>
-    第7章「1G/2G合併程度」決策點的原始理由（避免混淆<code>TB_GD</code>與<code>TB_ALEX</code>）因此需要重新檢視，目前傾向：新後端統一對接 <code>ALEX_TICKET_200602</code>／<code>conn3</code> 這一套2G票務中心schema即可，不需要再刻意維持兩個Bounded Context——但這牽動已建置的 <code>2GBack-api</code> 試作專案（見上方callout），需要與需求方確認後才能定案，本文件先如實記錄此開放問題。</li>
+    第7章「1G/2G合併程度」決策點的原始理由（避免混淆<code>TB_GD</code>與<code>TB_ALEX</code>）因此已重新檢視並定案：<code>2GBack-api</code> 已於2026-07-28完成 code1~code5 全部模組，統一對接 <code>ALEX_TICKET_200602</code>／<code>conn3</code> 這一套2G票務中心schema，實際採單一Bounded Context（未分兩個Context），詳見下方第6、7章更新。</li>
 </ul>
 
 <h2 id="stack">2. 技術選型建議</h2>
@@ -112,7 +112,7 @@
 <tr><th>層</th><th>採用技術</th><th>理由</th></tr>
 <tr><td>後端框架</td><td>✅ <b>ASP.NET Core (C#)</b></td><td>現有環境是 Windows/IIS/MSSQL，驅動與部署摩擦最小；團隊從 VBScript 過渡到 C# 學習曲線較平緩</td></tr>
 <tr><td>資料存取</td><td>✅ <b>Dapper</b></td><td>輕量、貼近原生SQL好對照舊查詢，支援參數化查詢與現有 Stored Procedure 呼叫，不需要資料庫改動</td></tr>
-<tr><td>前端</td><td><b>React 或 Vue 的 SPA</b>，呼叫後端 REST API</td><td>直接把已完成的 UI/UX 原型（code1、code2）接上真實 API</td></tr>
+<tr><td>前端</td><td><b>React 或 Vue 的 SPA</b>，呼叫後端 REST API</td><td>直接把已完成的 UI/UX 原型（code1、code2）接上真實 API<br><span style="color:var(--bad-b);font-size:12.5px;">⚠️ 實際建置未採此建議：<code>2GBack-api</code> 最終改用五個各自獨立、無共用 JS/CSS、無建置流程的靜態 HTML 頁面（<code>index.html</code>~<code>types.html</code>），不是 SPA。</span></td></tr>
 <tr><td>認證</td><td>沿用 MSSQL 帳密表，改用 <b>JWT 或 Cookie Session</b> 簽發，取代舊有的 <code>Session("Cname")</code>／<code>chk_session2.asp</code></td><td>租戶（groupid）綁定登入身分，不再信任網址參數（修正各模組「D-04越權風險」類缺陷）</td></tr>
 </table>
 <p class="callout warn"><strong>備選方案</strong>若團隊更偏好 JS/TS 全端，可用 <b>Node.js + Fastify/Express + Prisma</b> 取代 ASP.NET Core，一樣能接同一個 MSSQL；主要代價是 Windows 整合驗證與既有 Session 機制要多花力氣搬遷。</p>
@@ -164,7 +164,7 @@
   <li><b>按模組垂直切</b>，不要整包重寫：先做 code1（項目管理），驗證整套新架構（認證、分層、與舊DB共存）可行，再依樣套用到 code2~code5。</li>
   <li><b>新舊系統並存過渡期</b>：新 API 與舊 ASP 頁面同時指向同一個資料庫，舊頁面逐步下線，降低一次性風險。</li>
   <li><b>（v2更新）1G/2G Bounded Context 分界需重新確認</b>：原建議是「1G（code1~3）與2G（code4~5）分成兩個獨立Bounded Context」，但既然code1~3已證實改接與code4~5相同的 <code>ALEX_TICKET_200602</code> schema，這個分界的原始依據已不成立。除非需求方確認舊<code>TB_GD_RepairCode1~3_*</code>表仍有其他系統在用（代表1G系統本身仍存在，只是不再由code1~3後台代管），否則新架構可考慮以單一Bounded Context處理code1~5，降低不必要的重複建模成本。</li>
-  <li><b>試作進度與v2發現不同步，需要對齊</b>：已建置的 <code>2GBack-api</code>（code1/code2）目前對接的是v1舊表 <code>GD_SALES_BARK_200412</code>；在往code3~code5擴充或正式投產前，應先與需求方確認是否要把 <code>2GBack-api</code> 也改接 <code>ALEX_TICKET_200602</code>／<code>TB_ALEX_RepairCode1/2_200501</code>，以符合目前ASP原始碼實際在用的架構，避免新舊系統各自對接不同資料表造成資料不一致。</li>
+  <li><b>（已對齊，2026-07-28）</b>試作專案 <code>2GBack-api</code> 已完成 code1~code5 全部模組，並已從初版對接的v1舊表 <code>GD_SALES_BARK_200412</code> 切換為現行ASP原始碼實際使用的 <code>ALEX_TICKET_200602</code>／<code>TB_ALEX_RepairCode1~5_*</code>（v2架構），不再有新舊系統對接不同資料表的疑慮；詳見 <code>2GBack-api</code> 專案 README「v2 遷移紀錄」章節。</li>
 </ul>
 
 <h2 id="risks">7. 風險與取捨</h2>
@@ -173,11 +173,11 @@
 <tr><th>決策點</th><th>選A</th><th>選B</th><th>取捨</th></tr>
 <tr><td>後端語言</td><td>✅ ASP.NET Core (C#)</td><td>Node.js + TypeScript</td><td>A對現有Windows/IIS環境摩擦最小；B前端後端同語言、社群資源多，但Session/Windows驗證要多搬</td></tr>
 <tr><td>資料存取</td><td>✅ Dapper</td><td>EF Core</td><td>A輕量、貼近原生SQL好對照舊查詢；B有變更追蹤/關聯載入等進階功能，但學習曲線較高</td></tr>
-<tr><td>1G/2G合併程度</td><td>✅ 分成兩個獨立Bounded Context（<span style="color:var(--bad-b);">⚠️前提已變，見下方說明</span>）</td><td>強行合併成一套模型</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆</td></tr>
+<tr><td>1G/2G合併程度</td><td>分成兩個獨立Bounded Context（<span style="color:var(--bad-b);">⚠️前提已變，實際未採用，見下方說明</span>）</td><td>✅ 單一模型（<code>2GBack-api</code> 實際採用）</td><td>A維護清晰但要多寫一些共用邏輯；B短期看起來簡單，長期容易再現「TB_GD vs TB_ALEX」這種混淆——但既然五模組已證實共用同一schema，B的長期風險並未發生</td></tr>
 </table>
-<p class="callout bad"><strong>⚠️「1G/2G合併程度」決策的前提已被v2發現推翻，需要重新確認</strong>此決策當初是依據「code1~3用<code>TB_GD_*</code>是1G、code4~5用<code>TB_ALEX_*</code>是2G」畫分。現已證實code1~3也改接<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>，五個模組實際上共用同一套schema，「兩個獨立Bounded Context」的原始理由不再成立。是否仍要維持兩個Context（例如因為業務語意上1G/2G仍是兩套產品線，即使資料庫共用）、或改採單一Bounded Context，屬於需要與需求方重新確認的決策，本文件先誠實記錄、不預先變更選項A的勾選狀態。</p>
+<p class="callout ok"><strong>「1G/2G合併程度」決策已定案（2026-07-28）</strong>此決策當初是依據「code1~3用<code>TB_GD_*</code>是1G、code4~5用<code>TB_ALEX_*</code>是2G」畫分，但code1~3已證實也改接<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>，五個模組實際上共用同一套schema。<code>2GBack-api</code> 完成code1~code5全部模組時，實際採用<b>單一模型</b>（Domain/Application/Infrastructure/Api四層，五個模組的Entity/Service/Repository並列於同一層，未分兩個獨立Bounded Context），上方選項欄已更新反映此結果。</p>
 
-<footer>本文件的技術棧已確認（見上方三項✅），其餘細節（模組遷移順序、優先項目）仍為建議性質；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性。本次更新反映 <code>code1_system_spec.html</code>／<code>code2_system_spec.html</code>／<code>code3_system_spec.html</code> 的 v2 改版發現（code1~3已migrate到<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>），1G/2G Bounded Context分界與既有<code>2GBack-api</code>試作的資料庫對接目標皆列為待需求方確認的開放問題。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
+<footer>本文件的技術棧已確認（見上方三項✅），其餘細節（模組遷移順序、優先項目）仍為建議性質；實際導入前建議與團隊、DBA、既有維運人員再次確認可行性。本次更新反映 <code>code1_system_spec.html</code>／<code>code2_system_spec.html</code>／<code>code3_system_spec.html</code> 的 v2 改版發現（code1~3已migrate到<code>TB_ALEX_*</code>／<code>ALEX_TICKET_200602</code>），並同步更新試作進度：<code>2GBack-api</code> 已於2026-07-28完成code1~code5全部模組、統一對接v2 schema、確認採單一Bounded Context，先前列為開放問題的兩項（Bounded Context分界、<code>2GBack-api</code>資料庫對接目標）皆已定案，不再是待確認事項。相關背景請參見 <code>code1_system_spec.html</code> ~ <code>code5_system_spec.html</code>。</footer>
 
 </main>
 </div>

@@ -238,6 +238,7 @@ values
    '&lt;code4&gt;#&lt;startpresaledate&gt;#&lt;startpresaletime&gt;#&lt;stoppresaledate&gt;#&lt;stoppresaletime&gt;#&lt;Use_flag&gt;')
 </code></pre>
 <p>欄位 <code>goods_name</code> 實際存的是一段用 <code>#</code> 串接的除錯用字串（Code4值+四個時間欄位+Use_flag），不是真正的商品名稱——命名與內容不符，但這是既有行為，寫入本身是有效的。<code>strIP</code> 變數在本檔案中未見賦值語句，推測是 <code>dbload.asp</code> 或其他全域 include 提供的共用變數。</p>
+<p class="callout warn"><strong><code>subname</code> 值三支檔案不一致</strong>上面範本的 <code>subname='業態管理'</code> 只反映 <code>2G_Tcode4mod.asp</code>（編輯）與 <code>2G_Tcode4mod_stop.asp</code>（停用）兩支的實際寫法——兩者疑似從 code1 模組複製後忘記改名。<code>2G_Tcode4ready_db.asp</code>（狀態調整）則寫的是 <code>subname='地區管理'</code>，才是真正對應本模組的名稱。同一邏輯模組的稽核紀錄因此出現兩種不同的 <code>subname</code>，改寫時建議統一為「地區管理」。</p>
 
 <h2 id="pages">7. 逐頁詳細規格</h2>
 
@@ -246,13 +247,15 @@ values
 <div>輸入參數</div><div><code>mid</code>、<code>page</code>、<code>flag</code>（路徑模式）、<code>Item_1</code>/<code>Item_2</code>/<code>Item_3</code>（業態/品牌/票務三層連動下拉，逐層onchange整頁重載）、<code>Item_4</code>（未在畫面提供輸入框，僅SQL條件保留）、<code>Item4_name</code>（地區名稱模糊比對）</div>
 <div>資料來源</div><div>四表join：<code>TB_ALEX_RepairCode3_200501 a, RepairCode2 b, RepairCode1 c, RepairCode4 d</code>，條件 <code>b.use_flag=0 and c.use_flag=0 and c.groupid=mid</code>（<b>注意：這裡沒有檢查 d(Code4本身)或a(Code3)的use_flag</b>，只檢查了b和c，見D4-01）</div>
 <div>顯示規則</div><div>【修改】按鈕不論狀態一律顯示；【停用】按鈕只在 <code>Use_flag="0"</code> 時顯示</div>
+<div>狀態顯示文字</div><div>狀態欄位只判斷 <code>Use_flag="0"</code> → 顯示「使用中」，<b>其餘一律顯示「未啟用」</b>——即「停用(1)」與「待上架(2)」在列表上顯示成同一個字樣、無法從畫面區分，且兩者都不會出現【停用】按鈕（見D4-10）</div>
 </div>
 
 <h3 id="p-code4add" class="file-anchor"><span class="badge b-page">頁面</span> 7.2 2G_Tcode4add.asp — 新增表單</h3>
 <div class="kv">
-<div>三層連動下拉</div><div>業態(code1，未啟用/99排除)→品牌(code2，依code1篩選，use_flag=0)→票務(code3，依code1+code2篩選，use_flag=0)；前兩層用 <code>onchange location.href</code> 整頁重載連動，第三層改用 JS <code>GetDefaultSortTK_1G()</code>／<code>GetDefaultStepModeTK()</code> 直接在前端填入預設排序/步驟樣式（不重載頁面）</div>
+<div>三層連動下拉</div><div>業態(code1，已啟用/99排除)→品牌(code2，依code1篩選，use_flag=0)→票務(code3，依code1+code2篩選，use_flag=0)；前兩層用 <code>onchange location.href</code> 整頁重載連動，第三層改用 JS <code>GetDefaultSortTK_1G()</code>／<code>GetDefaultStepModeTK()</code> 直接在前端填入預設排序/步驟樣式（不重載頁面）</div>
 <div>1G欄位</div><div>Item_4(必填,maxlength10)、Item4_name(必填,maxlength25)、圖片上傳、開始/停止預售時間（皆必填，格式與邏輯用JS檢查：起日必須早於迄日且晚於今日）</div>
 <div>2G欄位</div><div>完整的Sort/Code4_Name/SubTitle/按鈕小圖/主打/LOGO/MapText/Title/IsStep/StepMode，規則見6.2節</div>
+<div>狀態預設值</div><div><code>Use_flag</code> 單選鈕預設勾選<b>「1（停用）」</b>而非「0（啟用）」，需承辦人員手動切換才會以啟用狀態新增；編輯頁（<code>2G_Tcode4mod_temp.asp</code>）在1G欄位可編輯情境下同樣預設停用</div>
 <div>送出目標</div><div>POST → <code>2G_Tcode4add_db.asp</code></div>
 </div>
 
@@ -299,14 +302,15 @@ values
 
 <h3 id="p-code4ready_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.8 2G_Tcode4ready_db.asp — 狀態調整寫入</h3>
 <div class="kv">
-<div>邏輯</div><div>直接UPDATE預售期間四欄位與Use_flag，<b>沒有任何檢查</b>（不查99互斥、不查父鏈狀態、不查子層Code5狀態），比 <code>2G_Tcode4mod.asp</code> 更寬鬆</div>
+<div>邏輯</div><div>直接UPDATE預售期間四欄位與Use_flag，<b>沒有任何檢查</b>（不查99互斥、不查父鏈狀態、不查子層Code5狀態，<b>也不驗證送入的 <code>Use_flag</code> 是否為0或2</b>），比 <code>2G_Tcode4mod.asp</code> 更寬鬆</div>
+<div class="callout bad">程式缺陷（D4-10）：狀態互斥僅靠前端UI，後端無驗證</div><div><code>2G_Tcode4ready.asp</code> 表單把 <code>Use_flag=1</code>（停用）選項設為 <code>disabled</code>，但 <code>2G_Tcode4ready_db.asp</code> 對送入的 <code>Use_flag</code> 值本身沒有任何後端檢查，理論上可用偽造的POST請求直接把地區從其他狀態改回「停用(1)」，繞過 <code>2G_Tcode4mod_stop.asp</code> 原本負責的「下層Code5必須先無啟用中項目」安全檢查。第8章商業規則彙整所述「兩條路徑互不重疊」實際上只是前端限制，不是後端保證。</div>
 <div>稽核</div><div>同樣寫入 <code>TB_GD_UserClick_Log_200507</code></div>
 </div>
 
 <h2 id="rules">8. 商業規則彙整</h2>
 <ol>
 <li><b>父鏈需啟用（部分）：</b>列表與編輯頁的查詢條件要求Code1、Code2啟用中；但<b>沒有一致地檢查Code3(票務)本身的use_flag</b>（見D4-01），與code2/code3模組「一路檢查到底」的作法不同。</li>
-<li><b>三態狀態機：</b>0=啟用/1=停用/2=待上架；停用只能透過mod_stop設定，啟用/待上架透過ready_db設定，兩條路徑互不重疊。</li>
+<li><b>三態狀態機：</b>0=啟用/1=停用/2=待上架；停用只能透過mod_stop設定，啟用/待上架透過ready_db設定，兩條路徑<b>在UI上</b>互不重疊，但 <code>ready_db.asp</code> 後端未驗證Use_flag值，理論上可繞過（見D4-10）。</li>
 <li><b>1G欄位編輯權限綁定狀態：</b>只有目前狀態為「停用中」時才能編輯地區編號/名稱/圖片/預售期間；2G欄位（外觀設定）任何非停用操作的情境下都可編輯。</li>
 <li><b>2G欄位無條件更新：</b>不論1G欄位是否符合編輯權限，2G欄位一定會被更新（除非該次請求走的是mod_stop或ready，那兩支不觸碰2G欄位）。</li>
 <li><b>99互斥規則（新增有效，編輯已失效）：</b>新增時99與其他啟用中地區互斥的檢查正常運作；<b>編輯時同等的檢查因D4-02缺陷已經失效</b>。</li>
@@ -318,14 +322,18 @@ values
 <table>
 <tr><th>編號</th><th>問題</th><th>影響</th><th>出現位置</th></tr>
 <tr><td>D4-01</td><td>列表與部分頁面的join條件檢查了Code1、Code2的use_flag，但沒有檢查Code3(票務)本身是否啟用</td><td>票務本身被停用後，其下地區可能仍會出現在列表/可編輯，與其他層級「一路檢查到底」的慣例不一致</td><td>2G_Tcode4.asp、2G_Tcode4mod_temp.asp等的join條件</td></tr>
-<tr><td>D4-02</td><td><code>2G_Tcode4mod.asp</code> 修改為編號99時的「其他啟用中地區」檢查，其判斷分支(if/else + alert)被整段註解，只留下UPDATE語句必定執行</td><td>99互斥規則在編輯情境下完全失效</td><td>2G_Tcode4mod.asp 第79-101行</td></tr>
+<tr><td>D4-02</td><td><code>2G_Tcode4mod.asp</code> 修改為編號99時的「其他啟用中地區」檢查，其判斷分支(if/else + alert)被整段註解，只留下UPDATE語句必定執行</td><td>99互斥規則在編輯情境下完全失效</td><td>2G_Tcode4mod.asp 第78-101行</td></tr>
 <tr><td>D4-03</td><td><code>2G_Tcode4mod_stop.asp</code> 的拒絕停用訊息文字前後不一致（提到「類型管理」又提到「此品牌的商品」）</td><td>純文案問題，不影響邏輯，但會讓使用者困惑</td><td>2G_Tcode4mod_stop.asp 第20行</td></tr>
-<tr><td>D4-04</td><td><code>2G_Tcode4ready.asp</code> 查無資料時只alert沒有<code>response.End</code>，後續繼續讀取空Recordset欄位</td><td>會在伺服器端出錯，而非停留在友善警告訊息（與code2/code3模組的D2-08同類）</td><td>2G_Tcode4ready.asp 第46-53行</td></tr>
+<tr><td>D4-04</td><td><code>2G_Tcode4ready.asp</code> 查無資料時只alert沒有<code>response.End</code>，後續繼續讀取空Recordset欄位</td><td>會在伺服器端出錯，而非停留在友善警告訊息（與code2/code3模組的D2-08同類）</td><td>2G_Tcode4ready.asp 第48-55行</td></tr>
 <tr><td>D4-05</td><td><code>mod_status</code> 變數在 <code>2G_Tcode4ready.asp</code> 中從未賦值卻被輸出到畫面</td><td>畫面標題與按鈕文字會出現空白（如「地區管理&lt;&gt;」）</td><td>2G_Tcode4ready.asp 第149、340行</td></tr>
 <tr><td>D4-06</td><td>SQL字串串接（Injection風險）、<code>err&lt;&gt;0</code>錯誤處理形同虛設——與code1/2/3模組相同的通用缺陷</td><td>同前述模組</td><td>幾乎所有檔案</td></tr>
 <tr><td>D4-07</td><td>雙資料庫寫入（conn3寫主檔、conn寫log）沒有交易(transaction)包裹，若log寫入失敗，主檔更新已經送出，兩者可能不一致</td><td>資料一致性風險（雖然影響僅限稽核記錄本身，不影響業務資料）</td><td>2G_Tcode4mod.asp、mod_stop.asp、ready_db.asp</td></tr>
 <tr><td>D4-08</td><td><code>func_2G_Common.asp</code>、<code>func_HTML.asp</code>、<code>func_2G_Ticket.asp</code>、<code>2G_Common.js</code> 四個共用函式庫的實作內容完全未提供，本文件中大量欄位的驗證/轉換/預設值邏輯（<code>ConvUni2ASC</code>、<code>FixFlagValue</code>、<code>GetChecked</code>、<code>ValueIs99</code>、<code>checknull_2G</code>等）都是黑盒</td><td>改寫時這些函式的真實邏輯必須另外取得原始碼才能百分之百還原行為；本文件只能描述「看得到的呼叫方式」</td><td>全模組</td></tr>
 <tr><td>D4-09</td><td>暫停訊息功能實際連到資料夾外、命名不含<code>2G_</code>前綴的<code>Tcode4stopmsg.asp</code>，行為完全未知</td><td>本文件無法涵蓋暫停公告這部分的行為，改寫前需另外取得該檔案</td><td>2G_Tcode4mod_temp.asp 的暫停訊息按鈕</td></tr>
+<tr><td>D4-10</td><td><code>2G_Tcode4ready_db.asp</code> 對送入的 <code>Use_flag</code> 沒有任何後端驗證，「停用」與「啟用/待上架」兩條路徑的互斥只靠前端表單 <code>disabled</code> 屬性</td><td>偽造POST可繞過 <code>mod_stop.asp</code> 的下層Code5安全檢查，直接把狀態改回停用（或反向繞過停用限制）</td><td>2G_Tcode4ready_db.asp 全檔（無驗證邏輯）</td></tr>
+<tr><td>D4-11</td><td>新增與編輯表單的 <code>Use_flag</code> 單選鈕預設勾選「1（停用）」而非「0（啟用）」</td><td>承辦人員若忘記手動切換，新增/編輯後的地區會意外停留在停用狀態；規格與程式碼未特別標註此預設值，容易被改寫時忽略</td><td>2G_Tcode4add.asp 第311行、2G_Tcode4mod_temp.asp 第404行</td></tr>
+<tr><td>D4-12</td><td>列表頁 <code>2G_Tcode4.asp</code> 狀態欄只判斷 <code>Use_flag="0"</code>，其餘（含停用1與待上架2）一律顯示「未啟用」</td><td>「停用中」與「待上架」在列表上無法區分，也都不會顯示【停用】按鈕，與規格宣稱的「三態機制完整實作」有落差</td><td>2G_Tcode4.asp 第168-174行</td></tr>
+<tr><td>D4-13</td><td>稽核記錄的 <code>subname</code> 欄位在 <code>mod.asp</code>／<code>mod_stop.asp</code> 寫成「業態管理」，只有 <code>ready_db.asp</code> 正確寫「地區管理」——疑似從code1模組複製後忘記改</td><td>同一模組的稽核紀錄出現兩種不同子分類名稱，影響稽核追蹤與報表正確性</td><td>2G_Tcode4mod.asp、2G_Tcode4mod_stop.asp</td></tr>
 </table>
 
 <h2 id="glossary">10. 中文／系統術語對照表</h2>
@@ -350,10 +358,11 @@ values
 <li><b>比照code1/2/3模組的REST風格</b>，設計 <code>GET/PUT /api/groups/{groupId}/tickets/{code3}/regions/{code4}</code>、<code>POST .../regions/{code4}/ready</code>、<code>POST .../regions/{code4}/deactivate</code> 等端點，並把「開始/停止預售時間」的+1天儲存慣例封裝在服務層內部。</li>
 </ul>
 
-<h2 id="appendix">12. 附錄：原始碼全文（Big5→UTF-8，內容未變更僅轉碼）</h2>
-<p>因篇幅考量，本文件的附錄僅收錄結構最關鍵、缺陷最集中的檔案全文；其餘檔案的完整行為已於第7章逐頁說明並附上關鍵片段。如需逐行核對，請直接開啟資料夾內對應的原始 <code>.asp</code> 檔案（本機為 Big5 編碼）。</p>
+<h2 id="appendix">12. 附錄：原始碼全文（Big5→UTF-8）</h2>
+<p>因篇幅考量，本文件的附錄僅收錄結構最關鍵、缺陷最集中的檔案全文；其餘檔案的完整行為已於第7章逐頁說明並附上關鍵片段。<b>下方12.1的程式碼已移除與D4-02判斷邏輯無關的除錯用註解行（如零星的 <code>'response.write ...</code>），但所有影響D4-02判斷分支的原始註解（含被停用的 if/else/alert）皆逐字保留</b>；如需完全逐行核對（含所有除錯註解），請直接開啟資料夾內對應的原始 <code>.asp</code> 檔案（本機為 Big5 編碼）。</p>
 
 <h3 class="file-anchor">12.1 2G_Tcode4mod.asp（含 D4-02 缺陷位置）</h3>
+<p class="callout bad"><strong>如何從下方原始碼判讀 D4-02</strong>在 <code>if item_4="99" then</code> 分支內，原本應該存在的 <code>if not rsring2.eof then ... alert(...) ... response.End ... else</code> 判斷式，其開頭的 <code>'if not rsring2.eof then</code>、中段的 <code>'response.End</code>／<code>'else</code>、以及結尾的 <code>'end if</code> 全部被加上單引號註解掉，只有中間的 <code>&lt;script&gt;</code> alert 內容也被註解（<code>//alert(...)</code>），使得中間的 UPDATE 陳述式脫離了原本的 if/else 保護、永遠會執行。</p>
 <pre><code>&lt;!--#include file="../../../db/dbload.asp" --&gt;
 &lt;!--#include file="../inc/func_2G_Common.asp" --&gt;
 &lt;%
@@ -421,13 +430,16 @@ if use_flag_old = "1" then ' 1G欄位可修改時才需更新相關欄位
 	    if item_4="99" then
 		    sqlsel2="select * from TB_ALEX_RepairCode4_200601 a,TB_ALEX_RepairCode1_200501 b where a.code1="&amp;item_1&amp;" and a.code2="&amp;Item_2&amp;" and a.code3="&amp;Item_3&amp;" and a.code1=b.code1 and b.groupid="&amp;actionid&amp;""
 		    set rsring2 = conn3.Execute( sqlsel2 )
-		    ' *** D4-02: 下面這段 if/else + alert 被整段註解，只留下 UPDATE 必定執行 ***
+		    'response.write sqlsel2
+		    'if  not rsring2.eof  then
 		    %&gt;
 			    &lt;script language=javascript&gt;
 			    //alert("在地區管理中該服務其他編號且已啟用,無法修改為99!");
 			    //location.href='&lt;%=Session("url")%&gt;';
 			    &lt;/script&gt;
 		    &lt;%
+			    'response.End
+		    'else
 			    SQL=       " Update TB_ALEX_RepairCode4_200601  set "
 			    SQL= SQL &amp; " Item_4 ='" &amp; Item_4 &amp; "',"
 			    SQL= SQL &amp; " Item4_name ='" &amp; Item4_name &amp; "',"
@@ -438,8 +450,11 @@ if use_flag_old = "1" then ' 1G欄位可修改時才需更新相關欄位
 			    SQL= SQL &amp; " stoppresaletime ='"  &amp; stoppresaletime  &amp; "'"
 			    SQL= SQL &amp; " , Use_flag ="  &amp; Use_flag  &amp; ""
 			    SQL= SQL &amp; " where Code4= " &amp; id &amp; ""
+			    'response.write SQL
+			    'response.end
 			    set rs=server.createObject("adodb.recordset")
 			    conn3.execute(SQL)
+		    'end if
 	    else
 		    sqlsel3="select * from TB_ALEX_RepairCode4_200601 a,TB_ALEX_RepairCode1_200501 b where a.code1="&amp;item_1&amp;" and a.code2="&amp;Item_2&amp;" and a.code3="&amp;Item_3&amp;" and a.use_flag=0 and a.code1=b.code1 and b.groupid="&amp;actionid&amp;" and a.item_4=99"
 		    set rsring3 = conn3.Execute( sqlsel3 )

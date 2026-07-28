@@ -135,10 +135,11 @@ code5 是 code4 模組（<code>2G_Tcode4*.asp</code>，地區管理）再往下�
 <tr><th>路徑</th><th>被哪些檔案引用</th><th>備註</th></tr>
 <tr><td><code>../../../db/dbload.asp</code></td><td>全部8個檔案</td><td>提供conn（1G）、conn3（2G/ALEX）</td></tr>
 <tr><td><code>../../../db/chk_session2.asp</code></td><td>add、mod_temp、ready</td><td>登入驗證</td></tr>
-<tr><td><code>../inc/func_2G_Common.asp</code>／<code>func_HTML.asp</code>／<code>./func_2G_Ticket.asp</code>／<code>../inc/2G_Common.js</code></td><td>add、add_db、mod_db、mod_temp、ready</td><td>與code4模組共用同一套函式庫，實作細節同樣未知（見code4規格D4-08）</td></tr>
+<tr><td><code>../inc/func_2G_Common.asp</code></td><td>add、add_db、mod_db、mod_temp、ready</td><td>與code4模組共用同一套函式庫，實作細節同樣未知（見code4規格D4-08）</td></tr>
+<tr><td><code>../inc/func_HTML.asp</code>／<code>./func_2G_Ticket.asp</code>／<code>../inc/2G_Common.js</code></td><td>add、mod_temp、ready（<b>不含add_db、mod_db</b>）</td><td>這三個只有渲染完整頁面（含日曆/上傳UI）的檔案才會引用；<code>add_db.asp</code>、<code>mod_db.asp</code>是純寫入處理器，只include了<code>dbload.asp</code>和<code>func_2G_Common.asp</code>兩支</td></tr>
 <tr><td><code>2G_upload_code3.asp</code></td><td>add、mod_temp（購票須知上傳按鈕）</td><td><b>code4模組沒有這支依賴</b>，是code5特有的檔案上傳頁，用於「購票須知(1G/2G)」欄位</td></tr>
 <tr><td><code>&lt;Src_Path_1G&gt;Tcode5stopmsg.asp</code></td><td>mod_temp.asp的暫停訊息按鈕</td><td>同code4模組模式，指向資料夾外、無2G_前綴的檔案，行為未知</td></tr>
-<tr><td><code>&lt;Src_Path_1G&gt;code4SetShortCode.asp</code> / <code>code4SetShortCode_2G.asp</code></td><td>mod_temp.asp的【設定代碼】【2G設定代碼】按鈕</td><td><b>code5特有</b>的額外功能入口，命名疑似沿用「code4」但實際掛在code5的編輯頁面上，用途與內容完全未知，且連結中使用了本檔案從未賦值的變數 <code>pdid</code>（見D5-06）</td></tr>
+<tr><td><code>&lt;Src_Path_1G&gt;code4SetShortCode.asp</code>（資料夾外）／<code>code4SetShortCode_2G.asp</code>（<b>同資料夾內，無路徑前綴</b>）</td><td>mod_temp.asp的【設定代碼】【2G設定代碼】按鈕</td><td><b>code5特有</b>的額外功能入口，命名疑似沿用「code4」但實際掛在code5的編輯頁面上；兩者路徑性質不同——只有【設定代碼】指向資料夾外，【2G設定代碼】其實是同資料夾內的檔案；用途與內容完全未知，且連結中使用了本檔案從未賦值的變數 <code>pdid</code>（見D5-06）</td></tr>
 </table>
 
 <h2 id="arch">4. 架構重點（與code4的差異）</h2>
@@ -246,18 +247,18 @@ where a.code5=b.code5 and a.code5=&lt;id&gt; and b.use_flag=0 and b.if_batch=1
 
 <h3 id="p-code5mod_temp" class="file-anchor"><span class="badge b-page">頁面</span> 7.4 2G_Tcode5mod_temp.asp — 編輯／停用中繼表單</h3>
 <div class="kv">
-<div>資料讀取</div><div>六表join（含商品表以外的全部設定表），<b>本檔案有正確呼叫 <code>response.End</code></b>（不像code2/code3模組的同類頁面漏放，也優於code4mod_temp.asp——不，code4mod_temp.asp其實也有正確放response.End，只有code4ready.asp和code5ready.asp漏放，見D5-04）</div>
+<div>資料讀取</div><div>五表join（Code1~Code4皆須確認關聯，與模組整體慣例一致），<b>本檔案有正確呼叫 <code>response.End</code></b>（不像code2/code3模組的同類頁面漏放；code4mod_temp.asp同樣正確，只有code4ready.asp和code5ready.asp漏放，見D5-04）</div>
 <div>ReadOnly判斷</div><div>與code4模組相同雙旗標機制；購票須知(1G)欄位的可編輯性綁 <code>ReadOnly_1GField</code>，購票須知(2G)欄位綁 <code>ReadOnly_2GField</code></div>
-<div>額外按鈕</div><div>【待上架】→ <code>2G_Tcode5ready.asp</code>；【暫停訊息】→ 資料夾外<code>Tcode5stopmsg.asp</code>；【設定代碼】【2G設定代碼】→ 資料夾外的<code>code4SetShortCode.asp</code>/<code>code4SetShortCode_2G.asp</code>，且URL中使用了本檔案未賦值的變數<code>pdid</code>（見D5-06）</div>
+<div>額外按鈕</div><div>【待上架】→ <code>2G_Tcode5ready.asp</code>；【暫停訊息】→ 資料夾外<code>Tcode5stopmsg.asp</code>；【設定代碼】→ 資料夾外的<code>code4SetShortCode.asp</code>（前面加了<code>Src_Path_1G</code>路徑前綴）；【2G設定代碼】→ <code>code4SetShortCode_2G.asp</code>，<b>與前者不同，此連結沒有加路徑前綴，其實指向與本檔案同一資料夾內的檔案，不是資料夾外</b>；兩個連結的URL中都使用了本檔案未賦值的變數<code>pdid</code>（見D5-06）</div>
 </div>
 
 <h3 id="p-code5mod_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.5 2G_Tcode5mod_db.asp — 編輯寫入</h3>
 <div class="kv">
 <div>條件式更新1G欄位</div><div>
-僅當 <code>use_flag_old="1"</code> 才進入此區塊；區塊內先依 <code>Use_flag</code> 是否為"1"組出兩種略有差異的查詢（檢查地區Code4是否符合條件），若查無資料 → alert「此類型使用狀態為停止,無法開啟此類型!」並 <b>正確呼叫 <code>response.End</code></b>；否則UPDATE八個1G欄位（不含Item_4/code1~4，那些是地區/父鏈資訊不會被類型編輯頁改動）。
+僅當 <code>use_flag_old="1"</code> 才進入此區塊；區塊內先依 <code>Use_flag</code> 是否為"1"組出兩種略有差異的查詢（檢查地區Code4是否符合條件），若查無資料 → alert「此類型使用狀態為停止,無法開啟此類型!」並 <b>正確呼叫 <code>response.End</code></b>；否則UPDATE <b>11個</b>欄位（<code>Item_5、Item5_name、Item5_pic、html_file、startpresaledate、startpresaletime、stoppresaledate、stoppresaletime、if_keep_tel、Use_flag、PG_Mode</code>，不含code1~4，那些是地區/父鏈資訊不會被類型編輯頁改動）。<b>注意 <code>PG_Mode</code>（交易模式）實際寫在這個1G條件區塊內，不在下面的2G欄位區塊</b>——即編輯一筆「已啟用」（<code>use_flag_old&lt;&gt;"1"</code>）的類型時，即使畫面上改了交易模式，這次UPDATE也不會被執行，變更不會被儲存。
 </div>
-<div>2G欄位（含html_file_2g）</div><div>無條件更新，共10個欄位</div>
-<div>稽核</div><div>寫入 <code>TB_GD_UserClick_Log_200507</code></div>
+<div>2G欄位（含html_file_2g）</div><div>無條件更新，共<b>15個</b>欄位（<code>html_file_2g、Sort、Code5_Name、SubTitle、Code5_Pic、ShowCode5_Pic、ShowHot、Logo_Pic、ShowLogo_Pic、MapText、ShowMapText、Title、IsStep、StepMode、If_skipHtml</code>）</div>
+<div>稽核</div><div>寫入 <code>TB_GD_UserClick_Log_200507</code>，但 <code>subname</code> 欄位寫的是「業態管理」而非「類型管理」，與 <code>2G_Tcode5mod_stop.asp</code> 同樣的殘留命名問題（見D5-09）</div>
 </div>
 
 <h3 id="p-code5mod_stop" class="file-anchor"><span class="badge b-handler">處理器</span> 7.6 2G_Tcode5mod_stop.asp — 停用寫入</h3>
@@ -269,14 +270,14 @@ where a.code5=b.code5 and a.code5=&lt;id&gt; and b.use_flag=0 and b.if_batch=1
 <h3 id="p-code5ready" class="file-anchor"><span class="badge b-page">頁面</span> 7.7 2G_Tcode5ready.asp — 狀態調整表單</h3>
 <div class="kv">
 <div class="callout bad">程式缺陷（D5-04，同code4的D4-04）：查無資料未中止</div><div><code>if rsring.eof then alert(...) end if</code> 沒有 <code>response.End</code>，會在後續讀取欄位時出錯。</div>
-<div class="callout bad">程式缺陷（同D4-05）：<code>mod_status</code>／<code>mod2</code> 未賦值</div><div>本檔案完全沒有 <code>mod2=request("mod")</code> 這一行（code4ready.asp至少還賦值了mod2，只是沒賦值mod_status；本檔案<b>連mod2也沒賦值</b>），導致畫面上「開始預售時間」等區塊判斷 <code>&lt;%if mod2="2" then%&gt;</code> 永遠走else分支（即永遠當作「非停用檢視」處理，顯示可編輯的日期選擇器），以及標題／按鈕的 <code>mod_status</code> 一樣顯示空白。</div>
+<div class="callout bad">程式缺陷（同D4-05）：<code>mod_status</code> 未賦值；<code>mod2</code> 實際上有賦值，但唯一呼叫端從未帶入 <code>mod</code> 參數</div><div>本檔案<b>有</b> <code>mod2=request("mod")</code> 這一行；問題出在唯一連到本頁的入口——<code>2G_Tcode5mod_temp.asp</code> 的【待上架】按鈕——組連結時從未帶上 <code>mod</code> 這個querystring參數，所以 <code>mod2</code> 實際執行時永遠拿到空字串。結果一樣：畫面上「開始預售時間」等區塊判斷 <code>&lt;%if mod2="2" then%&gt;</code> 永遠走else分支（即永遠當作「非停用檢視」處理，顯示可編輯的日期選擇器）。<code>mod_status</code> 則確實從未被賦值，標題／按鈕文字一樣顯示空白。</div>
 <div>送出目標</div><div>POST → <code>2G_Tcode5ready_db.asp</code></div>
 </div>
 
 <h3 id="p-code5ready_db" class="file-anchor"><span class="badge b-handler">處理器</span> 7.8 2G_Tcode5ready_db.asp — 狀態調整寫入</h3>
 <div class="kv">
 <div>邏輯</div><div>直接UPDATE預售期間與Use_flag，無任何檢查（與code4ready_db.asp同構）</div>
-<div>稽核</div><div>寫入記錄時 <code>funname</code> 固定填「票務中心」、<code>subname</code> 固定填「<b>類型管理</b>」——注意這裡跟code4ready_db.asp寫的「業態管理」不同，本檔案的稽核文字反而是對的（code4模組那邊很可能才是文案殘留，見code4規格文件D4-03同類問題的又一佐證）</div>
+<div>稽核</div><div>寫入記錄時 <code>funname</code> 固定填「票務中心」、<code>subname</code> 固定填「<b>類型管理</b>」——這是本模組四支會寫稽核log的檔案中唯一寫對名稱的一支；<code>2G_Tcode5mod_db.asp</code>、<code>2G_Tcode5mod_stop.asp</code> 都還留著「業態管理」的殘留文字（見D5-09），跟code4模組D4-13是同一種複製貼上遺留問題</div>
 </div>
 
 <h2 id="rules">8. 商業規則彙整</h2>
@@ -296,11 +297,12 @@ where a.code5=b.code5 and a.code5=&lt;id&gt; and b.use_flag=0 and b.if_batch=1
 <tr><td>D5-01</td><td><code>2G_Tcode5add_db.asp</code> 第75行判斷用 <code>item_4="99"</code>，應為 <code>item_5="99"</code>（本檔案從未定義item_4）</td><td>新增類型時，「99編號應檢查是否已有其他啟用中類型」的規則永遠不會被觸發（另一半99檢查仍正常）</td><td>2G_Tcode5add_db.asp 第75行</td></tr>
 <tr><td>D5-02</td><td>列表與多數查詢沒有檢查Code3(票務)本身的use_flag，與code4模組的D4-01同一類疏漏</td><td>票務被停用後其下類型可能仍出現在列表/可操作</td><td>2G_Tcode5.asp、2G_Tcode5mod_temp.asp等</td></tr>
 <tr><td>D5-03</td><td>SQL字串串接、<code>err&lt;&gt;0</code>錯誤處理形同虛設——通用缺陷</td><td>同前述所有模組</td><td>幾乎所有檔案</td></tr>
-<tr><td>D5-04</td><td><code>2G_Tcode5ready.asp</code> 完全沒有 <code>mod2=request("mod")</code> 賦值語句，也沒有在EOF時<code>response.End</code></td><td>畫面上「開始/停止預售時間」永遠顯示可編輯版面（即使理論上該頁該顯示唯讀），且標題/按鈕文字空白；查無資料時會在空Recordset上出錯</td><td>2G_Tcode5ready.asp 全檔</td></tr>
+<tr><td>D5-04</td><td><code>2G_Tcode5ready.asp</code> 有 <code>mod2=request("mod")</code> 賦值，但唯一呼叫端<code>mod_temp.asp</code>的【待上架】連結從未帶 <code>mod</code> 參數，導致<code>mod2</code>實質永遠是空字串；<code>mod_status</code>則確實從未賦值；也沒有在EOF時<code>response.End</code></td><td>畫面上「開始/停止預售時間」永遠顯示可編輯版面（即使理論上該頁該顯示唯讀），且標題/按鈕文字空白；查無資料時會在空Recordset上出錯</td><td>2G_Tcode5ready.asp 全檔；根因在 2G_Tcode5mod_temp.asp 第521行的連結組法</td></tr>
 <tr><td>D5-05</td><td><code>2G_Tcode5add.asp</code> 使用 <code>cont</code>、<code>pcode_in</code> 兩個從未賦值的變數（用於購票須知欄位顯示與上傳彈窗參數）</td><td>新增模式下顯示空白尚可接受，但若未來邏輯變動誤以為這兩個變數有值，會是潛在陷阱；上傳彈窗網址中的<code>pcode_in</code>參數目前永遠是空字串，需確認彈窗頁面能否正確處理空值</td><td>2G_Tcode5add.asp 第223-224、230-231行</td></tr>
 <tr><td>D5-06</td><td><code>2G_Tcode5mod_temp.asp</code> 的【設定代碼】【2G設定代碼】連結使用了從未賦值的變數 <code>pdid</code></td><td>連到外部頁面時該參數永遠是空字串，實際功能是否受影響取決於外部頁面（未知）如何處理空值</td><td>2G_Tcode5mod_temp.asp 第524-525行</td></tr>
-<tr><td>D5-07</td><td><code>Item_5</code> 的 <code>maxlength</code> 在新增頁(2G_Tcode5add.asp)是15、編輯頁(mod_temp.asp)是15，但欄位本身資料庫定義長度、以及code4模組對應欄位(<code>Item_4</code> maxlength=10)並不一致，且add.asp的input maxlength=15但資料庫insert沒有額外做長度檢查</td><td>前端長度限制與其他模組不完全對稱，非致命但改寫時應統一規則或至少明確記錄各層允許的編號長度</td><td>2G_Tcode5add.asp、2G_Tcode5mod_temp.asp</td></tr>
+<tr><td>D5-07</td><td><code>Item_5</code> 的 <code>maxlength</code> 新增頁(2G_Tcode5add.asp)是<b>10</b>、編輯頁(mod_temp.asp)是<b>12</b>，兩頁不一致，且都與code4模組對應欄位(<code>Item_4</code> maxlength=10)不完全對稱（<code>size="15"</code>屬性容易與maxlength混淆，需注意兩者是不同HTML屬性）</td><td>前端長度限制在新增/編輯兩頁不對稱，非致命但改寫時應統一規則或至少明確記錄各層允許的編號長度</td><td>2G_Tcode5add.asp 第199行、2G_Tcode5mod_temp.asp 第235行</td></tr>
 <tr><td>D5-08</td><td>與code4模組相同：雙資料庫寫入（conn3主檔+conn稽核log）沒有交易包裹；四個共用函式庫(<code>func_2G_Common.asp</code>等)實作未知</td><td>同code4規格文件D4-07、D4-08</td><td>全模組</td></tr>
+<tr><td>D5-09</td><td>稽核記錄的 <code>subname</code> 欄位在 <code>2G_Tcode5mod_db.asp</code>、<code>2G_Tcode5mod_stop.asp</code> 都寫成「業態管理」，只有 <code>2G_Tcode5ready_db.asp</code> 正確寫「類型管理」——與code4模組D4-13是同一種複製貼上殘留問題</td><td>同一模組的稽核紀錄出現兩種不同子分類名稱，影響稽核追蹤與報表正確性</td><td>2G_Tcode5mod_db.asp 第132行、2G_Tcode5mod_stop.asp 第45行（附錄12.2可見此問題的原始碼佐證）</td></tr>
 </table>
 
 <h2 id="glossary">10. 中文／系統術語對照表</h2>
