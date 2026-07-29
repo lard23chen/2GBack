@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>ERA 商品管理模組系統規格文件（供改寫參考）</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --warn-bg:#fff3e0; --warn-b:#f0b429;
+    --bad-bg:#fdecec; --bad-b:#e5484d; --ok-bg:#e8f7ee; --ok-b:#2f9e5b;
+    --nav-bg:#f7f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --warn-bg:#3a2e12; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-b:#b0454a; --ok-bg:#123321; --ok-b:#2f9e5b;
+      --nav-bg:#1a1d21;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; line-height:1.7;}
+  .layout{display:flex; min-height:100vh;}
+  nav.toc{width:280px; flex:0 0 280px; background:var(--nav-bg); border-right:1px solid var(--border); padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; font-size:13.5px;}
+  nav.toc h2{font-size:14px; color:var(--muted); margin:0 0 10px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:2px 0;}
+  nav.toc a{color:var(--fg); text-decoration:none; display:block; padding:4px 8px; border-radius:6px;}
+  nav.toc a:hover{background:var(--code-bg); color:var(--accent);}
+  nav.toc .sub{padding-left:14px; font-size:12.5px; color:var(--muted);}
+  main{flex:1; padding:36px 48px; max-width:1020px;}
+  h1{font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:12px;}
+  h2{font-size:20px; margin-top:48px; border-left:5px solid var(--accent); padding-left:10px;}
+  h3{font-size:16px; margin-top:28px; color:var(--accent);}
+  h4{font-size:14.5px; margin-top:18px;}
+  p{max-width:880px;}
+  code{background:var(--code-bg); padding:2px 5px; border-radius:4px; font-size:0.92em;}
+  pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; font-size:12.8px; line-height:1.55;}
+  pre code{background:none; padding:0;}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 45%, transparent);}
+  .badge{display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600;}
+  .b-page{background:var(--ok-bg); color:var(--ok-b); border:1px solid var(--ok-b);}
+  .b-handler{background:var(--warn-bg); color:var(--warn-b); border:1px solid var(--warn-b);}
+  .b-off{background:var(--bad-bg); color:var(--bad-b); border:1px solid var(--bad-b);}
+  .callout{border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid var(--border);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-b);}
+  .callout.bad{background:var(--bad-bg); border-color:var(--bad-b);}
+  .callout.ok{background:var(--ok-bg); border-color:var(--ok-b);}
+  .callout strong{display:block; margin-bottom:4px;}
+  .flow{font-family:"Consolas",monospace; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:16px; white-space:pre; overflow-x:auto; font-size:13px;}
+  .kv{display:grid; grid-template-columns:200px 1fr; gap:4px 12px; font-size:13.5px; margin:10px 0;}
+  .kv div:nth-child(odd){color:var(--muted);}
+  .file-anchor{scroll-margin-top:20px;}
+  .toc-h1{font-weight:700; margin-top:10px;}
+  del{color:var(--muted);}
+  footer{color:var(--muted); font-size:12px; margin-top:60px; border-top:1px solid var(--border); padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li class="toc-h1"><a href="#overview">1. 模組概觀</a></li>
+    <li class="toc-h1"><a href="#files">2. 檔案角色總覽</a></li>
+    <li class="toc-h1"><a href="#deps">3. 外部相依元件</a></li>
+    <li class="toc-h1"><a href="#datamodel">4. 資料模型</a></li>
+    <li class="sub"><a href="#dm-main">4.1 主表 TB_ALEX_MainTicket_200604</a></li>
+    <li class="sub"><a href="#dm-serial">4.2 序號表 TB_ALEX_PcodeIn_Serial_200603</a></li>
+    <li class="sub"><a href="#dm-refund">4.3 退票表 TB_ALEX_RefundTicket_201106</a></li>
+    <li class="sub"><a href="#dm-codes">4.4 分類碼主表（code1~5）</a></li>
+    <li class="sub"><a href="#dm-com">4.5 廠商連結表</a></li>
+    <li class="toc-h1"><a href="#dataflow">5. 頁面流程圖</a></li>
+    <li class="toc-h1"><a href="#biz">6. 商業規則</a></li>
+    <li class="sub"><a href="#biz-code5-90">6.1 code5=90 特殊分支</a></li>
+    <li class="sub"><a href="#biz-batch">6.2 批次 / 非批次 (if_batch)</a></li>
+    <li class="sub"><a href="#biz-pid">6.3 programid 重複檢查</a></li>
+    <li class="sub"><a href="#biz-presale">6.4 預售日期 ±1 天轉換</a></li>
+    <li class="sub"><a href="#biz-serial">6.5 pcode_in 流水號規則</a></li>
+    <li class="sub"><a href="#biz-uflag">6.6 商品狀態 (goods_use_flag)</a></li>
+    <li class="sub"><a href="#biz-session">6.7 場次狀態 (U_Flag)</a></li>
+    <li class="sub"><a href="#biz-2gfield">6.8 2G 展示欄位 (IsStep/StepMode 等)</a></li>
+    <li class="toc-h1"><a href="#pages">7. 逐頁詳細規格</a></li>
+    <li class="sub"><a href="#p-manage">7.1 2G_All_ERA_Manage.asp（列表+篩選）</a></li>
+    <li class="sub"><a href="#p-manage2">7.2 2G_All_ERA_Manage_2.asp（列表結果）</a></li>
+    <li class="sub"><a href="#p-add">7.3 2G_Add_ERA_Ticket.asp（新增表單）</a></li>
+    <li class="sub"><a href="#p-add-db">7.4 2G_Add_ERA_db.asp（新增寫入）</a></li>
+    <li class="sub"><a href="#p-mod">7.5 2G_Mod_ERA_Ticket.asp（編輯表單）</a></li>
+    <li class="sub"><a href="#p-mod-db">7.6 2G_Mod_ERA_db.asp（編輯寫入）</a></li>
+    <li class="sub"><a href="#p-mod-2g">7.7 2G_Mod_ERA_db_2GField.asp（2G欄位單獨更新）</a></li>
+    <li class="sub"><a href="#p-show">7.8 2G_Show_ERA_Ticket.asp（唯讀/停用檢視）</a></li>
+    <li class="sub"><a href="#p-off">7.9 2G_Off_ERA_Ticket.asp（下架寫入）</a></li>
+    <li class="toc-h1"><a href="#known-bugs">8. 已知缺陷與注意事項</a></li>
+    <li class="toc-h1"><a href="#rewrite">9. 改寫建議</a></li>
+  </ol>
+</nav>
+
+<main>
+<h1>ERA 商品管理模組系統規格文件</h1>
+<p style="color:var(--muted); font-size:13px;">Classic ASP 逆向解析 ｜ 檔案群：<code>2G_*ERA*.asp</code> ｜ 版本：v1.0 ｜ 日期：2026-07-28</p>
+
+<!-- ===== 1. 概觀 ===== -->
+<h2 id="overview">1. 模組概觀</h2>
+<p>
+  ERA（Enterprise Retail Arrangement，推測縮寫）是「2G 票務中心」後台的<strong>商品管理子系統</strong>，
+  負責維護票券商品主資料（<code>TB_ALEX_MainTicket_200604</code>）。
+  每筆商品掛載於五層分類碼樹（code1→code2→code3→code4→code5）之下，
+  並與廠商（<code>cid</code>）、廠商連結（<code>comid</code>）相關聯。
+</p>
+<div class="callout warn">
+  <strong>⚠ 重要：code5=90 雙分支</strong>
+  商品分兩種形態：<br>
+  &bull; <strong>一般商品</strong>（item_5 ≠ 90）：有節目名稱、起訖站、贊助商、備註欄位等完整欄位。<br>
+  &bull; <strong>特殊商品</strong>（item_5 = 90，且 actionid = "0610"）：欄位大幅精簡，僅有 programid、票面格式、預售日期等核心欄位，<em>無</em>節目名稱與交通相關欄位。<br>
+  整個新增/編輯/顯示頁面都用 <code>if item_5="90"</code> 判斷分支，改寫時必須完整保留此邏輯。
+</div>
+
+<div class="kv">
+  <div>資料庫連線</div><div><code>conn3</code>（指向 <code>ALEX_TICKET_200602</code> 資料庫）及跨庫查詢 <code>GD_SALES_BARK_200412</code></div>
+  <div>主要主表</div><div><code>TB_ALEX_MainTicket_200604</code></div>
+  <div>分類碼資料庫</div><div><code>TB_ALEX_RepairCode1~5_*</code>（code1→code5 共 5 層）</div>
+  <div>編碼</div><div>Big5（<code>charset=big5</code>）</div>
+  <div>Session</div><div><code>Session("folder")</code> 控制路徑前綴；<code>Session("url")</code> 操作成功後的回跳 URL</div>
+  <div>認證</div><div><code>chk_session2.asp</code>（include）</div>
+</div>
+
+<!-- ===== 2. 檔案 ===== -->
+<h2 id="files">2. 檔案角色總覽</h2>
+<table>
+  <thead>
+    <tr><th>檔案名稱</th><th>型態</th><th>用途</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>2G_All_ERA_Manage.asp</code></td><td><span class="badge b-page">頁面</span></td><td>篩選條件表單（code1~5 聯動下拉、programid、pcode_in、programname、if_batch、flag_status、cid）；點「新增商品」按鈕進入 Add；點「查詢」送出到 Manage_2</td></tr>
+    <tr><td><code>2G_All_ERA_Manage_2.asp</code></td><td><span class="badge b-page">頁面</span></td><td>查詢結果列表（分頁）；顯示每筆商品狀態，依場次狀態 U_Flag 決定顯示「修改資料」或「查看資料＋查看詳情」按鈕</td></tr>
+    <tr><td><code>2G_Add_ERA_Ticket.asp</code></td><td><span class="badge b-page">頁面</span></td><td>新增商品表單；code5 onChange 觸發頁面 reload 以取得 item_5/actionid 決定顯示欄位；POST 到 Add_db</td></tr>
+    <tr><td><code>2G_Add_ERA_db.asp</code></td><td><span class="badge b-handler">Handler</span></td><td>新增寫入：先寫 RefundTicket 預佔序號、更新 PcodeIn_Serial；依 if_batch 分支寫入 MainTicket；programid 重複性在 server 端再次驗證</td></tr>
+    <tr><td><code>2G_Mod_ERA_Ticket.asp</code></td><td><span class="badge b-page">頁面</span></td><td>編輯商品表單；讀取現有資料預填；POST 到 Mod_db</td></tr>
+    <tr><td><code>2G_Mod_ERA_db.asp</code></td><td><span class="badge b-handler">Handler</span></td><td>編輯寫入：UPDATE TB_ALEX_MainTicket_200604；programid 重複性 server 端驗證；Hyperlink 廠商提示</td></tr>
+    <tr><td><code>2G_Mod_ERA_db_2GField.asp</code></td><td><span class="badge b-handler">Handler</span></td><td>僅更新 2G 展示欄位（Sort/Item_Name/SubTitle/Item_Pic/ShowItem_Pic/ShowHot/Logo_Pic/ShowLogo_Pic/MapText/ShowMapText/IsStep/StepMode），不動其餘商業欄位</td></tr>
+    <tr><td><code>2G_Show_ERA_Ticket.asp</code></td><td><span class="badge b-page">頁面</span></td><td>唯讀檢視（mod 參數=1 時表示「有場次中」的編輯入口，實際仍唯讀顯示）；亦作為下架前確認頁</td></tr>
+    <tr><td><code>2G_Off_ERA_Ticket.asp</code></td><td><span class="badge b-off">Handler</span></td><td>下架：UPDATE <code>TB_ALEX_ERATICKET_200603</code> set use_flag=1（⚠ 注意：寫的是 <strong>ERATICKET</strong> 表，非 MainTicket）</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 3. 相依 ===== -->
+<h2 id="deps">3. 外部相依元件</h2>
+<table>
+  <thead><tr><th>Include / 資源</th><th>用途</th></tr></thead>
+  <tbody>
+    <tr><td><code>../../../db/dbload.asp</code></td><td>建立 conn、conn3 資料庫連線</td></tr>
+    <tr><td><code>../../../db/dbload_bill.asp</code></td><td>建立帳單相關額外連線（Mod/Show 用）</td></tr>
+    <tr><td><code>../../../db/chk_session2.asp</code></td><td>Session 認證守衛</td></tr>
+    <tr><td><code>../inc/func_2G_Common.asp</code></td><td>ConvUni2ASC、FixFlagValue、ClearPicIfUnChecked、FixStepModeValue 等共用函式</td></tr>
+    <tr><td><code>../inc/func_HTML.asp</code></td><td>HTML 輸出輔助函式</td></tr>
+    <tr><td><code>./func_2G_Ticket.asp</code></td><td>票務專用函式（GetDefaultSort_Ticket、GetDefaultStepMode_Manage、GetIsStepName、GetStepModeName、Gen2GMenuPicSrc、fnGetDuplicateProgramID 等）</td></tr>
+    <tr><td><code>../../../calendar.asp</code></td><td>日期選擇器（YY_Calendar）</td></tr>
+    <tr><td><code>../inc/2G_Common.js</code></td><td>前端共用 JS（checkillegal 等）</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 4. 資料模型 ===== -->
+<h2 id="datamodel">4. 資料模型</h2>
+
+<h3 id="dm-main">4.1 主表 TB_ALEX_MainTicket_200604</h3>
+<p>每筆商品一列；以 <code>pdid</code>（PK，自動流水）為主鍵。</p>
+<table>
+  <thead><tr><th>欄位名</th><th>型態（推測）</th><th>說明</th><th>一般商品</th><th>code5=90 特殊</th></tr></thead>
+  <tbody>
+    <tr><td><code>pdid</code></td><td>int identity</td><td>商品 PK</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>code1</code></td><td>int</td><td>第一層分類碼（年齡類別）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>code2</code></td><td>int</td><td>第二層（品種別）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>code3</code></td><td>int</td><td>第三層（服務別）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>code4</code></td><td>int</td><td>第四層（地域別）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>code5</code></td><td>int</td><td>第五層（類型別）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>pcode_in</code></td><td>varchar(20)</td><td>廠商進貨碼；由 actionid + 10 位流水組成</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>programid</code></td><td>varchar(20)</td><td>商品編號（11 碼時 cid=52 or 9Q 會做重複檢查）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>programname</code></td><td>nvarchar</td><td>商品名稱</td><td>✅</td><td>❌（精簡版無此欄）</td></tr>
+    <tr><td><code>begin_busid</code></td><td>varchar</td><td>起始站 ID</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>end_busid</code></td><td>varchar</td><td>終點站 ID</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>via_busid</code></td><td>varchar</td><td>途經站 ID</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>startpresaledate</code></td><td>datetime</td><td>預售開始日；UI 顯示比 DB 存值少 1 天（DB 存=UI+1）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>startpresaletime</code></td><td>varchar(5)</td><td>預售開始時間 HH:MM</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>stoppresaledate</code></td><td>datetime</td><td>預售截止日；DB 存=UI+1</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>stoppresaletime</code></td><td>varchar(5)</td><td>預售截止時間 HH:MM</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>Slotting_Date</code></td><td>varchar(10)</td><td>上架日期；空或"99"=不設定；格式強制為 yyyy/MM/dd（SQL CONVERT 111）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>programkindid</code></td><td>varchar</td><td>節目種類 ID</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>ticket_format</code></td><td>int</td><td>票面格式 ID（FK → TB_GD_TicketFormat_Main_200503）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>receipt_format</code></td><td>int</td><td>收據格式 ID（FK → TB_ALEX_FormList_200506）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>cid</code></td><td>int</td><td>廠商 ID（FK → TB_GD_CooperAtiveshop_200412）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>comid</code></td><td>int</td><td>廠商連結 ID（FK → TB_ALEX_CONNECTCOMURL_200606）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>sponsorname</code></td><td>nvarchar</td><td>贊助商名稱</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>sponsorcontent_1~3</code></td><td>nvarchar</td><td>贊助商內容 1~3</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>specialnote</code></td><td>nvarchar</td><td>特別備註</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>use_flag</code></td><td>tinyint</td><td>商品啟用狀態：0=啟用，1=停用</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>if_batch</code></td><td>tinyint</td><td>是否批次：1=批次（直接 INSERT），0=非批次（先檢查唯一性）</td><td>✅</td><td>✅（code5≠90 分支）</td></tr>
+    <tr><td><code>ticket_num</code></td><td>int</td><td>票券數量（非批次商品用）；預設 1</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>t_note1~6</code></td><td>nvarchar</td><td>備註欄 1~6</td><td>✅</td><td>❌</td></tr>
+    <tr><td><code>commissionsetting</code></td><td>varchar</td><td>佣金設定（列表顯示用，非表單欄位）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>audit_flag</code></td><td>tinyint</td><td>審核旗標（Mod 頁讀取但不直接修改）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>QwareA_C</code></td><td>int/varchar</td><td>Qware 參數（新增/編輯都有傳送）</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>Sort</code></td><td>varchar</td><td>2G 排序值</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>Item_Name</code></td><td>nvarchar</td><td>2G 顯示名稱</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>SubTitle</code></td><td>nvarchar</td><td>2G 副標題</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>Item_Pic</code></td><td>varchar</td><td>2G 商品圖片路徑</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>ShowItem_Pic</code></td><td>char(1)</td><td>是否顯示商品圖：0=否，1=是</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>ShowHot</code></td><td>char(1)</td><td>是否顯示熱門標籤：0/1</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>Logo_Pic</code></td><td>varchar</td><td>2G LOGO 圖片路徑</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>ShowLogo_Pic</code></td><td>char(1)</td><td>是否顯示 LOGO：0/1</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>MapText</code></td><td>nvarchar</td><td>地圖文字說明</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>ShowMapText</code></td><td>char(1)</td><td>是否顯示地圖文字：0/1</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>IsStep</code></td><td>char(1)</td><td>是否有步驟：0=否，1=是</td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>StepMode</code></td><td>char(1)</td><td>步驟進入模式：1=單一進入，2=多重；IsStep=0 時強制為"無"</td><td>✅</td><td>✅</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-serial">4.2 序號表 TB_ALEX_PcodeIn_Serial_200603</h3>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>actionid</code></td><td>actionid（PK or UK）；每個 actionid 維護一個獨立流水</td></tr>
+    <tr><td><code>pcodein_num</code></td><td>目前已用最大流水號（int）；新增時 +1，再補 0 至 10 位</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-refund">4.3 預留序號表 TB_ALEX_RefundTicket_201106</h3>
+<p>新增商品時，先插入一筆僅含 <code>pcode_in</code> 的占位記錄，確保序號不重複（即使後續 MainTicket 寫入失敗，序號也已佔用）。</p>
+
+<h3 id="dm-codes">4.4 分類碼主表（code1~5）</h3>
+<table>
+  <thead><tr><th>層次</th><th>資料表</th><th>主要欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>code1</td><td><code>TB_ALEX_RepairCode1_200501</code></td><td>code1, Item1_name, actionid, item_1, use_flag, groupid</td><td>最上層分類；<code>actionid</code> 決定票務系統屬性；<code>groupid</code> 對應 mid 做篩選；<code>item_1≠99</code> 且 <code>use_flag=0</code> 為有效</td></tr>
+    <tr><td>code2</td><td><code>TB_ALEX_RepairCode2_200501</code></td><td>code2, code1, Item2_name, use_flag</td><td>依 code1 關聯篩選</td></tr>
+    <tr><td>code3</td><td><code>TB_ALEX_RepairCode3_200501</code></td><td>code3, code2, code1, Item3_name, use_flag</td><td>依 code1+code2 篩選</td></tr>
+    <tr><td>code4</td><td><code>TB_ALEX_RepairCode4_200601</code></td><td>code4, code3, code2, code1, item4_name, use_flag</td><td>地域別</td></tr>
+    <tr><td>code5</td><td><code>TB_ALEX_RepairCode5_200601</code></td><td>code5, code4, code3, code2, code1, item5_name, item_5, use_flag</td><td>類型別；<code>item_5</code> 值決定商品表單分支（90=特殊）</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-com">4.5 廠商相關表</h3>
+<table>
+  <thead><tr><th>資料表</th><th>主要欄位</th><th>用途</th></tr></thead>
+  <tbody>
+    <tr><td><code>TB_GD_CooperAtiveshop_200412</code>（跨庫）</td><td>cid, companyname, brevity_code, cooperation</td><td>廠商主表；查詢時 LEFT JOIN TB_GD_SHOPEntry 取得 actionid 對應廠商清單</td></tr>
+    <tr><td><code>TB_ALEX_CONNECTCOMURL_200606</code></td><td>comid, cid, cid_ext, return_jsp</td><td>廠商連結設定；<code>return_jsp≠""</code> 且 <code>use_flag=0</code> 時，新增/編輯後跳出「Hyperlink 商品需經出口頁」警告</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 5. 流程圖 ===== -->
+<h2 id="dataflow">5. 頁面流程圖</h2>
+<div class="flow">
+[入口：2G_All_ERA_Manage.asp]
+  │
+  ├─ [新增商品] ──▶ 2G_Add_ERA_Ticket.asp
+  │                   │ (code5 onChange → reload 本頁取 item_5)
+  │                   │ POST
+  │                   ▼
+  │               2G_Add_ERA_db.asp
+  │                   │ ① UPDATE PcodeIn_Serial (pcodein_num +1)
+  │                   │ ② INSERT RefundTicket (pcode_in 預佔)
+  │                   │ ③ if_batch=1 → INSERT MainTicket (直接)
+  │                   │    if_batch=0 → 檢查唯一性 → INSERT MainTicket
+  │                   │ ④ programid 重複檢查 (server-side)
+  │                   │ ⑤ alert 成功/失敗 → location.href=Session("url")
+  │
+  └─ [查詢] ──▶ 2G_All_ERA_Manage_2.asp (列表)
+                  │
+                  ├─ U_Flag=1（無場次）──▶ [修改資料] ──▶ 2G_Mod_ERA_Ticket.asp
+                  │                                            │ POST
+                  │                                            ▼
+                  │                                       2G_Mod_ERA_db.asp
+                  │                                       (UPDATE MainTicket)
+                  │
+                  └─ U_Flag≠1（有場次中）─▶ [查看資料] ──▶ 2G_Show_ERA_Ticket.asp (唯讀, mod=1)
+                                            [查看詳情] ──▶ 2G_Show_ERA_Ticket.asp (唯讀)
+                                                              │ [下架]
+                                                              ▼
+                                                         2G_Off_ERA_Ticket.asp
+                                                         (UPDATE ERATICKET use_flag=1)
+
+另外：從 Show 頁可直接 POST 到 2G_Mod_ERA_db_2GField.asp（僅更新 2G 展示欄位）
+</div>
+
+<!-- ===== 6. 商業規則 ===== -->
+<h2 id="biz">6. 商業規則</h2>
+
+<h3 id="biz-code5-90">6.1 code5=90 特殊分支（actionid="0610"）</h3>
+<p>
+  當 <code>item_5="90"</code> 且 <code>actionid="0610"</code> 時，商品為「精簡版」：
+</p>
+<ul>
+  <li>新增/編輯 SQL 使用精簡欄位集（<strong>不含</strong> programname, begin_busid, end_busid, via_busid, programkindid, sponsorname, sponsorcontent_1~3, specialnote, ticket_num, t_note1~6, if_batch 欄位）</li>
+  <li>UPDATE 語句同樣精簡，只更新 programid/startpresale/stoppresale/Slotting_Date/ticket_format/receipt_format/cid/comid 及 2G 展示欄位</li>
+  <li>非批次查重邏輯以 <code>cid</code> 取代 <code>comid</code> 作為查重維度</li>
+</ul>
+
+<h3 id="biz-batch">6.2 批次 / 非批次 (if_batch)</h3>
+<div class="callout warn">
+  <strong>if_batch=1（批次）</strong>：直接 INSERT，不做場次唯一性檢查。適用於大量批次匯入情境。<br>
+  <strong>if_batch=0（非批次）</strong>：INSERT 前先以 code1+code2+code3+code4+code5+comid（或 cid）查詢是否已存在非批次商品，若有則 alert 警告並 history.go(-1)，阻止重複建立。
+</div>
+
+<h3 id="biz-pid">6.3 programid 重複檢查</h3>
+<ul>
+  <li>條件：<code>use_flag=0</code>（啟用）AND <code>len(programid)=11</code> AND（<code>cid = cid_52</code> OR <code>cid = cid_9Q</code>）</li>
+  <li>呼叫 <code>fnGetDuplicateProgramID(conn3, pdid, programid)</code>（定義在 func_2G_Ticket.asp）</li>
+  <li>新增時 pdid 傳 <code>-1</code>（排除自身用；新增無自身）</li>
+  <li>重複則 alert 提示並 history.go(-1)</li>
+  <li>⚠ JS 前端也有檢查，但 Server 端仍有再驗，避免繞過 JS</li>
+</ul>
+
+<h3 id="biz-presale">6.4 預售日期 ±1 天轉換</h3>
+<div class="callout bad">
+  <strong>⚠ 容易出錯的隱性轉換</strong><br>
+  資料庫存的 <code>stoppresaledate</code>（及 startpresaledate）比 UI 顯示值多 1 天：<br>
+  &bull; <strong>讀取時</strong>（Mod/Show）：<code>stoppresaledate = dateadd("d",-1, rs("stoppresaledate"))</code> 顯示給使用者<br>
+  &bull; <strong>寫入時</strong>（Add_db/Mod_db）：<code>stoppresaledate = dateadd("d",1, Request("stoppresaledate"))</code> 存入 DB<br>
+  改寫時必須保留此邏輯，否則每次修改都會使日期偏移。
+</div>
+
+<h3 id="biz-serial">6.5 pcode_in 流水號規則</h3>
+<pre><code>pcodein_num = (SELECT pcodein_num FROM TB_ALEX_PcodeIn_Serial_200603 WHERE actionid=?) + 1
+pcode_in = actionid + LPAD(pcodein_num, 10, '0')   -- 共補到 10 位
+UPDATE TB_ALEX_PcodeIn_Serial_200603 SET pcodein_num = pcodein_num WHERE actionid=?
+INSERT INTO TB_ALEX_RefundTicket_201106 (pcode_in) VALUES (?)</code></pre>
+<div class="callout bad">
+  <strong>⚠ 競態條件（Race Condition）</strong>：原始碼無交易（Transaction）保護，高並發下可能產生重複 pcode_in。改寫時應使用資料庫交易或 SEQUENCE。
+</div>
+
+<h3 id="biz-uflag">6.6 商品狀態 (goods_use_flag)</h3>
+<table>
+  <thead><tr><th>DB 值 (MainTicket.use_flag)</th><th>UI 顯示</th><th>列表背景色</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>啟用</td><td>white</td></tr>
+    <tr><td>1</td><td>停用</td><td>red</td></tr>
+  </tbody>
+</table>
+
+<h3 id="biz-session">6.7 場次狀態 (U_Flag) — 列表操作按鈕決策</h3>
+<p>查詢 <code>TB_ALEX_Session_200604</code>（場次表）該商品是否有 <code>use_flag IN (0,2,3)</code> 的場次：</p>
+<table>
+  <thead><tr><th>U_Flag 值</th><th>說明</th><th>列表顯示按鈕</th></tr></thead>
+  <tbody>
+    <tr><td>1（eof = 無場次）</td><td>已下架/無場次</td><td>「修改資料」→ Mod_ERA_Ticket</td></tr>
+    <tr><td>0（有 use_flag=0 場次，上架中）</td><td>上架中</td><td>「查看資料」+ 「查看詳情」→ Show_ERA_Ticket</td></tr>
+    <tr><td>2</td><td>待上架</td><td>同上</td></tr>
+    <tr><td>3</td><td>待確認</td><td>同上</td></tr>
+    <tr><td>4</td><td>待設定</td><td>同上</td></tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <strong>注意</strong>：U_Flag 值輸出到畫面用中文（「上架中」等），但按鈕判斷只看 U_Flag="1"；其他值一律走唯讀流程。
+</div>
+
+<h3 id="biz-2gfield">6.8 2G 展示欄位（IsStep / StepMode 特殊規則）</h3>
+<ul>
+  <li><code>IsStep</code>：0 表示無步驟，1 表示有步驟；透過 <code>FixFlagValue(Request("IsStep"), "0", "1")</code> 處理，確保只有 "0"/"1"</li>
+  <li><code>StepMode</code>：僅在 IsStep=1 時有意義；使用 <code>FixStepModeValue</code> 函式，當 IsStep=0 時強制 StepMode 為某固定值（推測為 "0" 或空白）；StepMode 預設值 "1" 時同時接受 StepMode="0"（允許"無"勾選）</li>
+  <li>圖片欄位（Item_Pic / Logo_Pic）：若對應的 ShowItem_Pic / ShowLogo_Pic 為 "0"，則用 <code>ClearPicIfUnChecked</code> 清空圖片路徑（防止存入未顯示的圖）</li>
+</ul>
+
+<!-- ===== 7. 逐頁 ===== -->
+<h2 id="pages">7. 逐頁詳細規格</h2>
+
+<h3 id="p-manage" class="file-anchor">7.1 2G_All_ERA_Manage.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：商品查詢篩選表單 + 新增入口。</p>
+<h4>URL 參數（GET/POST）</h4>
+<table>
+  <thead><tr><th>參數</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>mid</td><td>管理群組 ID；用於 code1 查詢的 groupid 篩選</td></tr>
+    <tr><td>sid / fid / wid</td><td>Session/Function/Work ID（傳遞用，轉發到子頁面）</td></tr>
+    <tr><td>flag</td><td>0=使用相對路徑；非0=使用 Session("folder") 前綴</td></tr>
+    <tr><td>code1~5</td><td>聯動下拉 onChange reload 本頁並帶新選值</td></tr>
+    <tr><td>cid</td><td>廠商篩選（在 Manage 頁是依 mid 前兩碼篩選 TB_GD_SHOPEntry）</td></tr>
+    <tr><td>programid / pcode_in</td><td>文字輸入搜尋欄（Submit 時送到 Manage_2）</td></tr>
+    <tr><td>programname</td><td>商品名稱搜尋（Submit 時送到 Manage_2）</td></tr>
+    <tr><td>if_batch</td><td>批次篩選（Submit 時送到 Manage_2）</td></tr>
+    <tr><td>flag_status</td><td>啟用狀態篩選：0=啟用，1=停用（Submit 時送到 Manage_2）</td></tr>
+  </tbody>
+</table>
+<h4>前端驗證（checkillegal）</h4>
+<p>programid / pcode_in / programname 欄位禁止以下字元：<code>` ^ " @ ! &amp; . # % * ( ) + - '</code></p>
+
+<h3 id="p-manage2" class="file-anchor">7.2 2G_All_ERA_Manage_2.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：接收 Manage 表單，執行查詢並顯示分頁列表。</p>
+<h4>查詢邏輯</h4>
+<p>六表 JOIN：code3 a ⟵ code2 b ⟵ code1 c ⟵ code4 d ⟵ code5 e ⟵ MainTicket f</p>
+<p>篩選條件（所有條件 AND 組合）：code1~5 相等、pcode_in LIKE、programid LIKE、programname LIKE、cid 相等、if_batch 相等、use_flag（flag_status）相等。</p>
+<p>ORDER BY：<code>f.code2, f.code3</code></p>
+<h4>列表欄位</h4>
+<p>programid、programname、Item1_name、Item2_name、Item3_name、Item4_name、Item5_name、cid_ext（廠商外部ID）、商品狀態、批次/非批次、操作按鈕</p>
+<h4>操作按鈕決策</h4>
+<p>查詢 <code>TB_ALEX_Session_200604</code> 取 U_Flag，依規則 6.7 決定按鈕。</p>
+
+<h3 id="p-add" class="file-anchor">7.3 2G_Add_ERA_Ticket.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：新增商品表單。POST action → <code>2G_Add_ERA_db.asp</code>。</p>
+<h4>關鍵邏輯</h4>
+<ul>
+  <li>code5 onChange reload 本頁，帶 code1~5 及 cid 等參數，頁面重新載入後依 item_5 決定顯示的欄位群組。</li>
+  <li>code5 選定後：查 <code>TB_ALEX_RepairCode5_200601 JOIN TB_ALEX_RepairCode1_200501</code> 取得 <code>item_5</code> 及 <code>actionid</code>。</li>
+  <li>廠商下拉（cid）：跨庫查詢 <code>GD_SALES_BARK_200412</code> 中的 TB_GD_SHOPEntry + TB_GD_CooperAtiveshop，cooperation=0。</li>
+  <li>廠商連結（comid）：依選定的 cid 篩選 TB_ALEX_CONNECTCOMURL_200606。</li>
+  <li>ticket_format：查 TB_GD_TicketFormat_Main_200503 (use_flag=0)。</li>
+  <li>receipt_format：查 TB_ALEX_FormList_200506 (actionid=? and use_flag=0)。</li>
+  <li>預設值：<code>Sort/Item_Name/SubTitle</code> 若 code5 已選，呼叫 <code>GetDefaultSort_Ticket("6", code5)</code> 取預設 Sort；<code>IsStep/StepMode</code> 由 <code>GetDefaultStepMode_Manage</code> 設定。</li>
+</ul>
+<h4>表單欄位（一般商品，item_5 ≠ 90）</h4>
+<table>
+  <thead><tr><th>欄位</th><th>類型</th><th>備註</th></tr></thead>
+  <tbody>
+    <tr><td>code1~5</td><td>select（聯動）</td><td>onChange reload</td></tr>
+    <tr><td>cid</td><td>select</td><td>onChange reload（帶 actionid）</td></tr>
+    <tr><td>comid</td><td>select</td><td>依 cid 動態篩選</td></tr>
+    <tr><td>programid</td><td>text</td><td>maxlength=20</td></tr>
+    <tr><td>programname</td><td>text</td><td>maxlength=50（推測）</td></tr>
+    <tr><td>begin_busid / end_busid / via_busid</td><td>text/select</td><td>起訖站</td></tr>
+    <tr><td>startpresaledate + _hour/_min</td><td>text + select×2</td><td>日期 + 時分</td></tr>
+    <tr><td>stoppresaledate + _hour/_min</td><td>text + select×2</td><td>日期 + 時分</td></tr>
+    <tr><td>Slotting_Date</td><td>text</td><td>上架日期；空白或99=不設定</td></tr>
+    <tr><td>programkindid</td><td>select/text</td><td>節目種類</td></tr>
+    <tr><td>ticket_format</td><td>select</td><td>票面格式</td></tr>
+    <tr><td>receipt_format</td><td>select</td><td>收據格式</td></tr>
+    <tr><td>sponsorname / sponsorcontent_1~3 / specialnote</td><td>text/textarea</td><td>贊助商資訊</td></tr>
+    <tr><td>use_flag</td><td>select/radio</td><td>0=啟用，1=停用</td></tr>
+    <tr><td>if_batch</td><td>select</td><td>0=非批次，1=批次</td></tr>
+    <tr><td>ticket_num</td><td>text</td><td>票券數量</td></tr>
+    <tr><td>t_note1~6</td><td>text</td><td>備註欄</td></tr>
+    <tr><td>Sort / Item_Name / SubTitle</td><td>text</td><td>2G 展示</td></tr>
+    <tr><td>Item_Pic / ShowItem_Pic</td><td>text + checkbox</td><td>2G 商品圖</td></tr>
+    <tr><td>ShowHot</td><td>checkbox</td><td>熱門標籤</td></tr>
+    <tr><td>Logo_Pic / ShowLogo_Pic</td><td>text + checkbox</td><td>2G LOGO</td></tr>
+    <tr><td>MapText / ShowMapText</td><td>text + checkbox</td><td>地圖文字</td></tr>
+    <tr><td>IsStep / StepMode</td><td>radio</td><td>步驟設定</td></tr>
+    <tr><td>QwareA_C</td><td>hidden/text</td><td>Qware 參數</td></tr>
+  </tbody>
+</table>
+
+<h3 id="p-add-db" class="file-anchor">7.4 2G_Add_ERA_db.asp <span class="badge b-handler">Handler</span></h3>
+<p><strong>寫入流程（依序執行）：</strong></p>
+<ol>
+  <li>組合 <code>startpresaletime = HH:MM</code>（補零）</li>
+  <li><code>stoppresaledate = dateadd("d",1, Request("stoppresaledate"))</code></li>
+  <li>若 Slotting_Date 非空且非 "99"：透過 SQL CONVERT(111) 強制格式化</li>
+  <li>查 <code>TB_ALEX_RepairCode5_200601</code> 取 <code>item_5</code></li>
+  <li>查 <code>TB_ALEX_PcodeIn_Serial_200603</code> 取流水號，計算 pcode_in</li>
+  <li>programid 重複性 server 端驗證（6.3 條件）→ 若重複 alert history.go(-1)</li>
+  <li>UPDATE PcodeIn_Serial（pcodein_num）</li>
+  <li>INSERT RefundTicket（pcode_in 預佔）</li>
+  <li>依 <code>if_batch</code> 分支：<br>
+    &nbsp;&nbsp;if_batch=1 → INSERT MainTicket（完整批次欄位集）<br>
+    &nbsp;&nbsp;if_batch=0 → 查重（code1~5+comid/cid） → INSERT MainTicket（含 if_batch=0 欄位）</li>
+  <li>查 <code>TB_ALEX_CONNECTCOMURL_200606</code> 的 return_jsp：若非空且 use_flag=0，alert Hyperlink 警告</li>
+  <li>err≠0 → alert 失敗；else → alert 成功 + location.href=Session("url")</li>
+</ol>
+
+<h3 id="p-mod" class="file-anchor">7.5 2G_Mod_ERA_Ticket.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：編輯商品表單。以 pdid 讀取現有資料預填，結構與 Add 相同但為「讀-改-存」流程。POST → <code>2G_Mod_ERA_db.asp</code>。</p>
+<h4>URL 參數</h4>
+<table>
+  <thead><tr><th>參數</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>pdid</td><td>商品 PK（必填）</td></tr>
+    <tr><td>mid / actionid</td><td>管理群組 / actionid</td></tr>
+  </tbody>
+</table>
+<h4>特殊邏輯</h4>
+<ul>
+  <li>讀取時先驗 ticket_format 是否仍有效（若 eof 則 alert 警告）</li>
+  <li>stoppresaledate 顯示值 = DB 值 - 1 天</li>
+  <li>若 item_5="90"：隱藏非批次相關欄位，使用精簡表單</li>
+  <li>audit_flag 讀取（但不編輯）</li>
+</ul>
+
+<h3 id="p-mod-db" class="file-anchor">7.6 2G_Mod_ERA_db.asp <span class="badge b-handler">Handler</span></h3>
+<p><strong>寫入：UPDATE TB_ALEX_MainTicket_200604 WHERE pdid=?</strong></p>
+<ul>
+  <li>stoppresaledate = dateadd("d",1, Request("stoppresaledate"))（同 Add_db）</li>
+  <li>Slotting_Date SQL CONVERT 格式化</li>
+  <li>programid 重複性 server 端驗證（pdid 傳實際值，排除自身）</li>
+  <li>if item_5="90"：精簡 UPDATE（不含 programname 等欄位）</li>
+  <li>else：完整 UPDATE</li>
+  <li>Hyperlink return_jsp 警告同 Add_db</li>
+  <li>err≠0 → alert 失敗；else → alert 成功 + location.href=Session("url")</li>
+</ul>
+
+<h3 id="p-mod-2g" class="file-anchor">7.7 2G_Mod_ERA_db_2GField.asp <span class="badge b-handler">Handler</span></h3>
+<p><strong>用途</strong>：僅更新 2G 展示相關欄位，不動商業欄位。</p>
+<pre><code>UPDATE TB_ALEX_MainTicket_200604 SET
+  Sort, Item_Name, SubTitle, Item_Pic, ShowItem_Pic,
+  ShowHot, Logo_Pic, ShowLogo_Pic, MapText, ShowMapText,
+  IsStep, StepMode
+WHERE pdid = ?</code></pre>
+<p>URL 參數：pdid（必填）+ 各 2G 欄位。無 if_batch / programid / presaledate 等商業欄位。</p>
+
+<h3 id="p-show" class="file-anchor">7.8 2G_Show_ERA_Ticket.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：唯讀顯示商品詳細資料。同時作為「有場次」商品的檢視入口。</p>
+<h4>URL 參數</h4>
+<table>
+  <thead><tr><th>參數</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>pdid</td><td>商品 PK</td></tr>
+    <tr><td>actionid</td><td>ticket action ID</td></tr>
+    <tr><td>mod</td><td>1=從「有場次」的「查看資料（可修改）」進入；空=一般唯讀</td></tr>
+  </tbody>
+</table>
+<h4>特殊欄位</h4>
+<ul>
+  <li>cid_ext：LEFT OUTER JOIN TB_ALEX_CONNECTCOMURL_200606 取得廠商外部 ID</li>
+  <li>Slotting_Date：顯示前去除 "/0" 補零（replace(Slotting_Date, "/0", "/")）</li>
+  <li>從此頁可 POST 到 <code>2G_Mod_ERA_db_2GField.asp</code> 更新 2G 欄位</li>
+</ul>
+<div class="callout warn">
+  <strong>注意</strong>：Show 頁在 Mode=Page_Mode_stop（唯讀模式）時，ASP 端會對部分欄位套用 ReadOnlyAtStop / DisabledAtStop 屬性（透過 func_2G_Ticket.asp 的 Mode 變數控制），防止 UI 被竄改。
+</div>
+
+<h3 id="p-off" class="file-anchor">7.9 2G_Off_ERA_Ticket.asp <span class="badge b-off">Handler</span></h3>
+<p><strong>用途</strong>：下架商品（設為停用）。</p>
+<pre><code>UPDATE TB_ALEX_ERATICKET_200603 SET use_flag=1 WHERE pdid = ?</code></pre>
+<div class="callout bad">
+  <strong>⚠ 異常：寫入的是 ERATICKET 表，非 MainTicket</strong><br>
+  下架動作 UPDATE 的是 <code>TB_ALEX_ERATICKET_200603</code>（不同於主表 <code>TB_ALEX_MainTicket_200604</code>）。
+  此為原始碼既有行為，改寫時請確認業務意圖：這兩張表的關係需向熟悉舊系統的人員確認。
+</div>
+<p>pdid 從 Request("pdid") 取得，成功後 alert + location.href=Session("url")。</p>
+
+<!-- ===== 8. 已知缺陷 ===== -->
+<h2 id="known-bugs">8. 已知缺陷與注意事項</h2>
+<table>
+  <thead><tr><th>#</th><th>位置</th><th>問題描述</th><th>風險</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Add_db / Mod_db</td><td>pcode_in 流水號更新無交易保護，高並發可能產生重複序號</td><td>🔴 高</td></tr>
+    <tr><td>2</td><td>所有頁面</td><td>SQL 拼接無參數化，存在 SQL Injection 風險（programid / programname / pcode_in 等直接拼入 SQL）</td><td>🔴 高</td></tr>
+    <tr><td>3</td><td>Off_ERA_Ticket</td><td>下架寫入的是 TB_ALEX_ERATICKET_200603，而非 MainTicket.use_flag；兩表關係未見明確文件</td><td>🟠 中（需確認）</td></tr>
+    <tr><td>4</td><td>Manage_2</td><td>列表查詢無分頁數量上限保護，大量資料時可能造成頁面過重</td><td>🟠 中</td></tr>
+    <tr><td>5</td><td>Add_db</td><td>pcode_in 已預佔（INSERT RefundTicket），若後續 MainTicket 寫入失敗，孤兒序號無清理機制</td><td>🟠 中</td></tr>
+    <tr><td>6</td><td>Mod_ERA_Ticket</td><td>ticket_format 失效檢查（eof alert）之後仍繼續讀取 rs 欄位（receipt_format 等），若 eof 繼續執行會出錯</td><td>🟠 中</td></tr>
+    <tr><td>7</td><td>Add/Mod_Ticket</td><td>programid JS 前端驗證可被繞過（Server 端有二次驗證，但警示訊息可能不一致）</td><td>🟡 低</td></tr>
+    <tr><td>8</td><td>Add_ERA_Ticket</td><td>廠商下拉（cid）跨庫查詢無明確錯誤處理，若 GD_SALES_BARK 不可達，頁面無降級</td><td>🟡 低</td></tr>
+    <tr><td>9</td><td>Manage / Manage_2</td><td>同一表單同時包含篩選條件（Manage）和列表（Manage_2），URL 設計混亂，bookmarkable 性差</td><td>🟡 低（UX）</td></tr>
+    <tr><td>10</td><td>All_ERA_Manage_2</td><td>U_Flag 的計算查 TB_ALEX_Session_200604，但 U_Flag=2/3/4 的按鈕都走相同 Show 頁，區分意義不明確</td><td>🟡 低</td></tr>
+    <tr><td>11</td><td>Mod_ERA_Ticket</td><td>read cid_ext 需 LEFT JOIN CCU，但 Mod 頁的 SQL 未見 LEFT JOIN（只在 Show 頁有）；Mod 頁顯示 cid_ext 功能可能缺失</td><td>🟡 低（需確認）</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 9. 改寫建議 ===== -->
+<h2 id="rewrite">9. 改寫建議</h2>
+<ul>
+  <li><strong>資料存取</strong>：改用 Parameterized Query（Dapper / EF Core），根除 SQL Injection。</li>
+  <li><strong>序號生成</strong>：使用 DB SEQUENCE 或 BEGIN TRAN + SELECT FOR UPDATE，確保 pcode_in 原子性。</li>
+  <li><strong>商品形態</strong>：以明確的 <code>ProductType</code> enum 取代 <code>item_5="90"</code> 隱性判斷；可拆成兩種 DTO/Entity。</li>
+  <li><strong>日期轉換</strong>：將 ±1 天邏輯封裝成 domain layer 轉換（<code>ToDbStopDate / FromDbStopDate</code>），避免散落各頁面。</li>
+  <li><strong>下架目標表</strong>：確認 ERATICKET 與 MainTicket 的關係，統一下架邏輯。</li>
+  <li><strong>代碼階層</strong>：code1~5 五層聯動可用 parent-child 遞迴查詢取代五張 JOIN，並在前端做 AJAX 懶載入。</li>
+  <li><strong>前後端驗證</strong>：programid 重複、if_batch=0 場次唯一性，均應整合為後端 Validator，前端做輔助提示。</li>
+  <li><strong>廠商跨庫</strong>：GD_SALES_BARK 跨庫查詢建議改為 API 呼叫或 View，降低資料庫耦合。</li>
+</ul>
+
+<footer>
+  本規格文件由 AI 輔助逆向解析 Classic ASP 原始碼（Big5 編碼）產生。
+  標示「推測」或「需確認」之處代表原始碼未提供足夠資訊（外部 include、Stored Procedure、func_2G_Ticket.asp 內部邏輯等），
+  改寫前建議與熟悉舊系統的人員或 DBA 再次確認。
+</footer>
+</main>
+</div>
+</body>
+</html>
