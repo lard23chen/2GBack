@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>佣金管理模組系統規格文件（供改寫參考）</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#5b6572; --border:#dfe3e8;
+    --code-bg:#f6f8fa; --accent:#0b5fff; --warn-bg:#fff3e0; --warn-b:#f0b429;
+    --bad-bg:#fdecec; --bad-b:#e5484d; --ok-bg:#e8f7ee; --ok-b:#2f9e5b;
+    --nav-bg:#f7f8fa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4af; --border:#2b3036;
+      --code-bg:#1c2126; --accent:#5b9dff; --warn-bg:#3a2e12; --warn-b:#a9770f;
+      --bad-bg:#3a1a1a; --bad-b:#b0454a; --ok-bg:#123321; --ok-b:#2f9e5b;
+      --nav-bg:#1a1d21;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:"Segoe UI","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; line-height:1.7;}
+  .layout{display:flex; min-height:100vh;}
+  nav.toc{width:280px; flex:0 0 280px; background:var(--nav-bg); border-right:1px solid var(--border); padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto; font-size:13.5px;}
+  nav.toc h2{font-size:14px; color:var(--muted); margin:0 0 10px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:2px 0;}
+  nav.toc a{color:var(--fg); text-decoration:none; display:block; padding:4px 8px; border-radius:6px;}
+  nav.toc a:hover{background:var(--code-bg); color:var(--accent);}
+  nav.toc .sub{padding-left:14px; font-size:12.5px; color:var(--muted);}
+  main{flex:1; padding:36px 48px; max-width:1020px;}
+  h1{font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:12px;}
+  h2{font-size:20px; margin-top:48px; border-left:5px solid var(--accent); padding-left:10px;}
+  h3{font-size:16px; margin-top:28px; color:var(--accent);}
+  h4{font-size:14.5px; margin-top:18px;}
+  p{max-width:880px;}
+  code{background:var(--code-bg); padding:2px 5px; border-radius:4px; font-size:0.92em;}
+  pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; font-size:12.8px; line-height:1.55;}
+  pre code{background:none; padding:0;}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg);}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 45%, transparent);}
+  .badge{display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600;}
+  .b-page{background:var(--ok-bg); color:var(--ok-b); border:1px solid var(--ok-b);}
+  .b-handler{background:var(--warn-bg); color:var(--warn-b); border:1px solid var(--warn-b);}
+  .b-nav{background:var(--code-bg); color:var(--muted); border:1px solid var(--border);}
+  .callout{border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid var(--border);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-b);}
+  .callout.bad{background:var(--bad-bg); border-color:var(--bad-b);}
+  .callout.ok{background:var(--ok-bg); border-color:var(--ok-b);}
+  .callout strong{display:block; margin-bottom:4px;}
+  .flow{font-family:"Consolas",monospace; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:16px; white-space:pre; overflow-x:auto; font-size:13px;}
+  .kv{display:grid; grid-template-columns:210px 1fr; gap:4px 12px; font-size:13.5px; margin:10px 0;}
+  .kv div:nth-child(odd){color:var(--muted);}
+  .file-anchor{scroll-margin-top:20px;}
+  .toc-h1{font-weight:700; margin-top:10px;}
+  footer{color:var(--muted); font-size:12px; margin-top:60px; border-top:1px solid var(--border); padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li class="toc-h1"><a href="#overview">1. 模組概觀</a></li>
+    <li class="toc-h1"><a href="#files">2. 檔案角色總覽</a></li>
+    <li class="toc-h1"><a href="#deps">3. 外部相依元件</a></li>
+    <li class="toc-h1"><a href="#datamodel">4. 資料模型</a></li>
+    <li class="sub"><a href="#dm-main">4.1 商品主表欄位（佣金相關）</a></li>
+    <li class="sub"><a href="#dm-cash">4.2 銷售佣金表 TB_ALEX_TicketCashData_200603</a></li>
+    <li class="sub"><a href="#dm-fee">4.3 附加手續費表 TB_ALEX_TicketFeeData_200607</a></li>
+    <li class="sub"><a href="#dm-refund">4.4 退票設定（RefundTicket 佣金欄）</a></li>
+    <li class="sub"><a href="#dm-movie">4.5 電影商品主表 TB_CHRIS_MovieDataList_200603</a></li>
+    <li class="toc-h1"><a href="#dataflow">5. 頁面流程圖</a></li>
+    <li class="toc-h1"><a href="#biz">6. 商業規則</a></li>
+    <li class="sub"><a href="#biz-uflag">6.1 U_Flag 與操作入口決策</a></li>
+    <li class="sub"><a href="#biz-salestype">6.2 銷售類型 (sales_type)</a></li>
+    <li class="sub"><a href="#biz-broker">6.3 經銷商佣金層 GetBroker（0~12 梯次）</a></li>
+    <li class="sub"><a href="#biz-valuation">6.4 計價方式 (valuation_type / fixed_money)</a></li>
+    <li class="sub"><a href="#biz-procedures">6.5 手續費計算方式 (procedures_type)</a></li>
+    <li class="sub"><a href="#biz-refund">6.6 退票/退款設定 (refund_type / payback_type)</a></li>
+    <li class="sub"><a href="#biz-commissionsetting">6.7 commissionsetting 狀態旗標</a></li>
+    <li class="sub"><a href="#biz-movie">6.8 電影佣金（Movie）特殊子系統</a></li>
+    <li class="toc-h1"><a href="#pages">7. 逐頁詳細規格</a></li>
+    <li class="sub"><a href="#p-era-manage">7.1 All_ERACommission_Manage.asp（ERA 篩選表單）</a></li>
+    <li class="sub"><a href="#p-era-manage2">7.2 All_ERACommission_Manage_2.asp（ERA 列表）</a></li>
+    <li class="sub"><a href="#p-select">7.3 Select_TicketCommission.asp（類型選擇導航）</a></li>
+    <li class="sub"><a href="#p-mod">7.4 Mod_TicketCommission.asp（票務佣金設定表單）</a></li>
+    <li class="sub"><a href="#p-mod-db">7.5 Mod_TicketCommission_db.asp（佣金寫入）</a></li>
+    <li class="sub"><a href="#p-show">7.6 Show_TicketCommission.asp（佣金唯讀檢視）</a></li>
+    <li class="sub"><a href="#p-movie-manage">7.7 All_MovieCommission_Manage.asp（電影篩選+列表）</a></li>
+    <li class="sub"><a href="#p-movie-mod">7.8 Mod_MovieCommission.asp（電影佣金設定表單）</a></li>
+    <li class="toc-h1"><a href="#known-bugs">8. 已知缺陷與注意事項</a></li>
+    <li class="toc-h1"><a href="#rewrite">9. 改寫建議</a></li>
+  </ol>
+</nav>
+
+<main>
+<h1>佣金管理模組系統規格文件</h1>
+<p style="color:var(--muted); font-size:13px;">Classic ASP 逆向解析 ｜ 檔案群：<code>*Commission*.asp</code>（8 支）｜ 版本：v1.1 ｜ 日期：2026-07-30</p>
+
+<!-- ===== 1. 概觀 ===== -->
+<h2 id="overview">1. 模組概觀</h2>
+<p>
+  佣金管理模組負責設定每張票券商品（<code>TB_ALEX_MainTicket_200604</code>）的
+  <strong>銷售計價方式、經銷商佣金拆帳（0~12 梯次）、手續費計算方式、退票退款設定</strong>，
+  並同步管理電影類別商品（<code>TB_CHRIS_MovieDataList_200603</code>）的相同資訊。
+</p>
+<p>
+  模組分為兩個平行子系統：
+</p>
+<ul>
+  <li><strong>ERA 票務佣金</strong>：針對 <code>TB_ALEX_MainTicket_200604</code>（票券/活動類商品），透過 All_ERACommission_Manage → Mod_TicketCommission 進行設定。</li>
+  <li><strong>Movie 電影佣金</strong>：針對 <code>TB_CHRIS_MovieDataList_200603</code>（電影類商品，actionid 固定為 "0630"），透過 All_MovieCommission_Manage → Mod_MovieCommission（POST 到同一個 Mod_TicketCommission_db）進行設定。</li>
+</ul>
+
+<div class="callout warn">
+  <strong>⚠ 兩個子系統共用同一個寫入 Handler</strong>：<br>
+  <code>Mod_TicketCommission_db.asp</code> 同時處理 ERA 票務佣金與 Movie 電影佣金的寫入（由傳入的 actionid 區分）。
+  Movie 的 Select_TicketCommission.asp 也是以 actionid="0630" 連接相同的 db 頁面。
+</div>
+
+<div class="kv">
+  <div>資料庫連線</div><div><code>conn3</code>（ALEX_TICKET_200602）；廠商查詢用 <code>conn</code>（跨庫 GD_SALES_BARK_200412）</div>
+  <div>ERA 商品主表</div><div><code>TB_ALEX_MainTicket_200604</code></div>
+  <div>Movie 商品主表</div><div><code>TB_CHRIS_MovieDataList_200603</code>（actionid="0630"）</div>
+  <div>佣金明細表</div><div><code>TB_ALEX_TicketCashData_200603</code>（0~12 梯次）</div>
+  <div>手續費明細表</div><div><code>TB_ALEX_TicketFeeData_200607</code>（0~12 費用等級）</div>
+  <div>退票設定</div><div><code>TB_ALEX_RefundTicket_201106</code>（refund_type / payback_type）</div>
+  <div>commissionsetting</div><div>MainTicket 的欄位旗標：0=已設定，非0=未設定（設定完成後強制寫 0）</div>
+</div>
+
+<!-- ===== 2. 檔案 ===== -->
+<h2 id="files">2. 檔案角色總覽</h2>
+<table>
+  <thead>
+    <tr><th>檔案名稱</th><th>型態</th><th>適用子系統</th><th>用途</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>All_ERACommission_Manage.asp</code></td><td><span class="badge b-page">頁面</span></td><td>ERA</td><td>篩選條件表單（code1~5 聯動下拉、programid、pcode_in、programname、if_batch、廠商）；Submit → All_ERACommission_Manage_2</td></tr>
+    <tr><td><code>All_ERACommission_Manage_2.asp</code></td><td><span class="badge b-page">頁面</span></td><td>ERA</td><td>查詢結果分頁列表；依 U_Flag 決定按鈕：U_Flag=1（無場次）→「修改佣金」進 Mod_TicketCommission；否則→「查看詳情」進 Show_TicketCommission；另提供「退費設定」按鈕進 Show_SetRefund（外部頁）</td></tr>
+    <tr><td><code>Select_TicketCommission.asp</code></td><td><span class="badge b-nav">導航</span></td><td>Movie</td><td>電影類型選擇下拉（讀 code1 groupid=mid），onChange 導向 Mid_TicketCommission.asp（外部頁面）；本身為輕量入口頁</td></tr>
+    <tr><td><code>Mod_TicketCommission.asp</code></td><td><span class="badge b-page">頁面</span></td><td>ERA</td><td>ERA 票務佣金設定表單（完整欄位）；讀取 MainTicket + 佣金明細；POST → Mod_TicketCommission_db</td></tr>
+    <tr><td><code>Mod_TicketCommission_db.asp</code></td><td><span class="badge b-handler">Handler</span></td><td>ERA + Movie</td><td>共用寫入 Handler：UPDATE RefundTicket（退票設定）、DELETE+INSERT TicketCashData（0~12 梯次佣金）、可選 INSERT TicketFeeData（附加手續費）、UPDATE MainTicket（計價/佣金相關欄位，commissionsetting=0）</td></tr>
+    <tr><td><code>Show_TicketCommission.asp</code></td><td><span class="badge b-page">頁面</span></td><td>ERA</td><td>ERA 票務佣金唯讀檢視；同時也作為設定入口（U_Flag=3/4 時 title 顯示「設定」，否則「查詢」）；可連結 Mod_ERA_Return.asp（退費設定，U_Flag=3/4 時顯示）</td></tr>
+    <tr><td><code>All_MovieCommission_Manage.asp</code></td><td><span class="badge b-page">頁面</span></td><td>Movie</td><td>電影佣金查詢列表（篩選+結果合一頁）；固定 actionid="0630" 查 TB_CHRIS_MovieDataList；列表按鈕→ Mod_MovieCommission</td></tr>
+    <tr><td><code>Mod_MovieCommission.asp</code></td><td><span class="badge b-page">頁面</span></td><td>Movie</td><td>電影佣金設定表單；讀取 MovieDataList；與 Mod_TicketCommission 結構類似但商品欄位不同（showdate/showtime/seat 等）；POST → Mod_TicketCommission_db（actionid="0630"）</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 3. 相依 ===== -->
+<h2 id="deps">3. 外部相依元件</h2>
+<table>
+  <thead><tr><th>Include / 資源</th><th>用途</th></tr></thead>
+  <tbody>
+    <tr><td><code>../../../db/dbload.asp</code></td><td>建立 conn、conn3 連線</td></tr>
+    <tr><td><code>../../../db/chk_session2.asp</code></td><td>Session 認證守衛（部分頁面有）</td></tr>
+    <tr><td><code>../../../calendar.asp</code></td><td>日期選擇器</td></tr>
+    <tr><td><code>GetBroker</code> 函式</td><td>定義位置未知（外部 include 或同頁 Sub），傳入梯次編號、Syscode、pdid、actionid，回傳 syscodeid/syscode/syscodename/salescode/factory_broker/handy_broker/our_broker；核心邏輯查 <code>TB_ALEX_TicketCashData_200603</code></td></tr>
+    <tr><td><code>TB_GD_systemCode_200501</code> (codetype='COLLECTION')</td><td>銷售速碼主表（Manage 頁上架商品別下拉選項）；codeid=sales_code，syscodename=速碼名稱</td></tr>
+    <tr><td><code>TB_GD_systemCode_200501</code> (codetype='COMMISSION')</td><td>佣金算法代碼主表（factory_broker / handy_broker / our_broker 的值域）；codeid=算法 ID，syscodename=算法名稱</td></tr>
+    <tr><td><code>TB_GD_UnitCode_200501</code></td><td>計價單位主表（fixed_unit 下拉選項；unitid / unitname）；篩選 use_flag=0；查詢用 conn（非 conn3）</td></tr>
+    <tr><td><code>TB_GD_TicketFormat_Main_200503</code></td><td>票面格式主表（ticket_format → ticketname）；查詢用 conn3</td></tr>
+    <tr><td><code>TB_ALEX_FormList_200506</code></td><td>收據格式主表（receipt_format → FormName）；查詢用 conn3</td></tr>
+    <tr><td><code>TB_ALEX_TicketClass_200602</code></td><td>節目類別名稱（Show/Mod 頁顯示 programkindid 對應 class_name）</td></tr>
+    <tr><td><code>TB_ALEX_THEATER_200602</code></td><td>電影院場地名稱（Movie 子系統用，showareaid → place_name）</td></tr>
+    <tr><td><code>TB_GD_SHOPEntry_200501</code> + <code>TB_GD_CooperAtiveshop_200412</code></td><td>廠商下拉選單；Manage 頁按 left(actionid,2) 篩選 SHOPEntry，Show/Mod 頁直接用 cid 查 CooperAtiveshop</td></tr>
+    <tr><td><code>Show_SetRefund.asp</code></td><td>退費設定外部頁（列表頁的「退費設定」按鈕連結）</td></tr>
+    <tr><td><code>Mod_ERA_Return.asp</code></td><td>ERA 退費設定外部頁（Show 頁 U_Flag=3/4 時顯示按鈕）</td></tr>
+    <tr><td><code>Mid_TicketCommission.asp</code></td><td>電影類型選擇後的中介頁（Select 導向）</td></tr>
+    <tr><td><code>Update_UploadProduct_0610_db.asp</code></td><td>Show_TicketCommission 頁的 form action（外部頁，非 Mod_TicketCommission_db）；推測為「確認佣金設定」的 Handler</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 4. 資料模型 ===== -->
+<h2 id="datamodel">4. 資料模型</h2>
+
+<h3 id="dm-main">4.1 商品主表佣金相關欄位（TB_ALEX_MainTicket_200604）</h3>
+<table>
+  <thead><tr><th>欄位名</th><th>型態（推測）</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>Valuation_type</code></td><td>tinyint</td><td>計價方式：<strong>1=變動售價，2=固定售價</strong>（由 Show_TicketCommission.asp UI 邏輯確認；原 v1.0 推測相反）</td></tr>
+    <tr><td><code>fixed_money</code></td><td>decimal/varchar</td><td>固定計價金額（僅 valuation_type=2 時有意義；maxlength=6，限制 &lt;999999）</td></tr>
+    <tr><td><code>fixed_unit</code></td><td>int</td><td>固定計價單位（FK → <code>TB_GD_UnitCode_200501</code>.unitid；查詢用 conn）</td></tr>
+    <tr><td><code>procedures_type</code></td><td>tinyint</td><td>手續費計算方式：1=內含（不加計）；2=外加（逐梯次查 TicketFeeData）</td></tr>
+    <tr><td><code>extra_money</code></td><td>decimal</td><td>附加手續費金額（procedures_type=1 時為統一值欄位；type=2 時每梯次各有 extra_money_{n} 存入 TicketFeeData）</td></tr>
+    <tr><td><code>procedures_unit</code></td><td>int</td><td>手續費單位（SQL 中已被 comment out 棄用；db 接收的實際參數名為 <code>extra_unit</code>，不是 procedures_unit）</td></tr>
+    <tr><td><code>Sales_type</code></td><td>tinyint/varchar</td><td>銷售類型：1=一般/代理商品（Show 頁 radio disabled）；2=代售商品（Show 頁預設 checked disabled）</td></tr>
+    <tr><td><code>commissionsetting</code></td><td>tinyint</td><td>佣金設定完成旗標：0=已設定完成（寫入時強制設為 0）；其他=未完成</td></tr>
+    <tr><td><code>sessionsetting</code></td><td>tinyint</td><td>場次設定旗標（讀取顯示但未在此模組修改）</td></tr>
+    <tr><td><code>Use_flag</code></td><td>tinyint</td><td>商品/場次狀態：3=待確認(可設定)；4=待設定(可設定)；其他=已確認(唯讀查詢)</td></tr>
+    <tr><td><code>ticket_num</code></td><td>int</td><td>票券張數（Show 頁讀取並顯示，Mod 頁無此欄；推測為商品可購買的最大張數上限，UI 梯次最多顯示到 8 張）</td></tr>
+    <tr><td><code>pricesetting</code></td><td>varchar</td><td>價格設定（列表頁顯示用，Movie 子系統有用到；ERA 端 SQL 中 comment out）</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-cash">4.2 銷售佣金表 TB_ALEX_TicketCashData_200603</h3>
+<p>每筆商品（pdid）可有 0~12 個梯次（sales_count），每梯次一列。</p>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>pdid</code></td><td>商品 PK（FK → MainTicket）</td></tr>
+    <tr><td><code>actionid</code></td><td>票務系統 actionid</td></tr>
+    <tr><td><code>sales_count</code></td><td>梯次序號（0~12）</td></tr>
+    <tr><td><code>sales_code</code></td><td>銷售代碼（syscodeid，對應某個速碼系統）</td></tr>
+    <tr><td><code>factory_broker</code></td><td>廠商佣金（原廠抽成）</td></tr>
+    <tr><td><code>handy_broker</code></td><td>超商/代理佣金</td></tr>
+    <tr><td><code>our_broker</code></td><td>我方佣金（安心抽成）</td></tr>
+    <tr><td><code>begin_date</code></td><td>此梯次生效開始日期</td></tr>
+    <tr><td><code>end_date</code></td><td>此梯次生效結束日期</td></tr>
+  </tbody>
+</table>
+<div class="callout bad">
+  <strong>⚠ 寫入方式為 DELETE + INSERT（非 UPSERT）</strong>：<br>
+  每次儲存時對有傳入 sales_code 的梯次執行 <code>DELETE FROM TicketCashData WHERE pdid=? AND sales_count=?</code> 再 <code>INSERT</code>，無交易保護。若中途錯誤可能造成部分梯次資料遺失。
+</div>
+
+<h3 id="dm-fee">4.3 附加手續費表 TB_ALEX_TicketFeeData_200607</h3>
+<p>僅在 <code>procedures_type=2</code>（外加手續費）時使用，每筆商品可有 0~12 個費用等級。</p>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>pdid</code></td><td>商品 PK</td></tr>
+    <tr><td><code>fee_count</code></td><td>費用等級序號（0~12，對應 sales_count 梯次）</td></tr>
+    <tr><td><code>extra_fee</code></td><td>該梯次的附加手續費金額</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-refund">4.4 退票設定（TB_ALEX_RefundTicket_201106 佣金欄）</h3>
+<p>在 ERA 商品管理（Add_ERA_db）建立商品時就已 INSERT 佔位；佣金設定時更新退票相關欄位。</p>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>pcode_in</code></td><td>廠商進貨碼（PK / UK）</td></tr>
+    <tr><td><code>refund_type</code></td><td>退票方式（具體值域未見於此程式，推測為數字代碼）</td></tr>
+    <tr><td><code>payback_type</code></td><td>退款方式（同上）</td></tr>
+  </tbody>
+</table>
+
+<h3 id="dm-movie">4.5 電影商品主表 TB_CHRIS_MovieDataList_200603</h3>
+<p>電影子系統專用，固定以 <code>actionid='0630'</code> 篩選。</p>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>pdid</code></td><td>電影商品 PK</td></tr>
+    <tr><td><code>code1~5</code></td><td>五層分類碼（與 ERA 共用分類碼主表）</td></tr>
+    <tr><td><code>pcode_in / pcode_out</code></td><td>進貨碼 / 出貨碼</td></tr>
+    <tr><td><code>Movie_Id / Movie_name</code></td><td>電影 ID / 電影名稱</td></tr>
+    <tr><td><code>showdate / showtime</code></td><td>放映日期 / 時間</td></tr>
+    <tr><td><code>showareaid</code></td><td>場地 ID（FK → TB_ALEX_THEATER_200602）</td></tr>
+    <tr><td><code>seat</code></td><td>座位數</td></tr>
+    <tr><td><code>programkindid</code></td><td>電影類別 ID（FK → TB_ALEX_TicketClass_200602）</td></tr>
+    <tr><td><code>cid</code></td><td>廠商 ID</td></tr>
+    <tr><td><code>use_flag</code></td><td>狀態旗標</td></tr>
+    <tr><td><code>pricesetting</code></td><td>價格設定（列表顯示）</td></tr>
+    <tr><td><code>Valuation_type / fixed_money / fixed_unit / procedures_type / extra_money / procedures_unit / Sales_type / commissionsetting / sessionsetting</code></td><td>與 MainTicket 同語意的佣金欄位（推測結構相同）</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 5. 流程圖 ===== -->
+<h2 id="dataflow">5. 頁面流程圖</h2>
+<div class="flow">
+── ERA 票務佣金路徑 ──────────────────────────────────────────────
+
+[All_ERACommission_Manage.asp]  (篩選表單)
+  │ Submit
+  ▼
+[All_ERACommission_Manage_2.asp] (分頁列表)
+  │
+  ├─ U_Flag=1（無場次）──▶ [修改佣金] ──▶ Mod_TicketCommission.asp
+  │                                            │ POST
+  │                                            ▼
+  │                                       Mod_TicketCommission_db.asp
+  │                                       ① UPDATE RefundTicket (refund_type, payback_type)
+  │                                       ② for x=0~12: DELETE+INSERT TicketCashData (若 sales_code≠"")
+  │                                       ③ if procedures_type=2: DELETE+INSERT TicketFeeData (0~12)
+  │                                       ④ UPDATE MainTicket (Sales_type, procedures_type,
+  │                                          valuation_type, fixed_money, fixed_unit,
+  │                                          commissionsetting=0) ← 僅 flagcode=1 時執行
+  │                                       ⑤ alert 成功 → 回 Mod_TicketCommission.asp (self-reload)
+  │
+  ├─ U_Flag≠1（有場次）─▶ [查看詳情] ──▶ Show_TicketCommission.asp (唯讀)
+  │                                            └─ U_Flag=3/4 時顯示「退費設定」→ Mod_ERA_Return.asp
+  │
+  └─ [退費設定] ──▶ Show_SetRefund.asp (外部)
+
+── Movie 電影佣金路徑 ────────────────────────────────────────────
+
+[Select_TicketCommission.asp]  (code1 類型選擇)
+  │ onChange
+  ▼
+[Mid_TicketCommission.asp] (外部中介頁)
+  ▼
+[All_MovieCommission_Manage.asp] (篩選+列表合一)
+  │
+  └─ [修改佣金] ──▶ Mod_MovieCommission.asp
+                       │ POST (actionid="0630")
+                       ▼
+                  Mod_TicketCommission_db.asp (共用 Handler)
+</div>
+
+<!-- ===== 6. 商業規則 ===== -->
+<h2 id="biz">6. 商業規則</h2>
+
+<h3 id="biz-uflag">6.1 U_Flag 與操作入口決策</h3>
+<p>查詢 <code>TB_ALEX_Session_200604</code> 該商品是否有 <code>use_flag IN (0,2,3)</code> 的場次：</p>
+<table>
+  <thead><tr><th>U_Flag</th><th>意義</th><th>ERA Manage_2 按鈕</th></tr></thead>
+  <tbody>
+    <tr><td>1（eof）</td><td>無有效場次（已下架）</td><td>「修改佣金」→ Mod_TicketCommission（可編輯）</td></tr>
+    <tr><td>0（有 use_flag=0 場次）</td><td>上架中</td><td>「查看詳情」→ Show_TicketCommission（唯讀）</td></tr>
+    <tr><td>2</td><td>待上架</td><td>同上</td></tr>
+    <tr><td>3</td><td>待確認</td><td>同上；Show 頁顯示「退費設定」且 title="設定"</td></tr>
+    <tr><td>4</td><td>待設定</td><td>同上；Show 頁顯示「退費設定」且 title="設定"</td></tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <strong>注意</strong>：ERA Manage_2 的 flag=0 路徑（相對路徑）與 flag≠0 路徑（Session folder 前綴）在 U_Flag=0 時都指向 SHOW_ERA_Ticket.asp，
+  但 U_Flag=1 時 flag≠0 也指向 Mod_TicketCommission（兩路徑一致），推測 flag 參數控制的是路徑前綴而非業務邏輯。
+</div>
+
+<h3 id="biz-salestype">6.2 銷售類型 (sales_type)</h3>
+<table>
+  <thead><tr><th>值</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>一般商品 / 代理商品；商品代碼由系統決定</td></tr>
+    <tr><td>2</td><td>代售商品；需輸入 BrevityCode（速碼，3碼）；UI 上有 <code>chkbc()</code> JavaScript 驗證函式，根據速碼自動填入各梯次的 Syscode 欄位</td></tr>
+  </tbody>
+</table>
+
+<h3 id="biz-broker">6.3 經銷商佣金層 GetBroker（0~12 梯次）</h3>
+<p>
+  佣金設定支援 0~12 梯次（對應不同銷售張數層級）。<strong>Mod_TicketCommission（設定頁）</strong>用 GetBroker 迴圈渲染 0~12 梯次；<strong>Show_TicketCommission（唯讀頁）</strong>只顯示梯次 1~8，用硬編碼 rs_cash1~rs_cash8 各自查詢，非 GetBroker。
+  每個梯次呼叫 <code>GetBroker(梯次, Syscode, first, pdid, actionid, ...)</code> 取得：
+</p>
+<ul>
+  <li><strong>syscodeid</strong>：銷售代碼 ID（hidden，寫入時用）</li>
+  <li><strong>syscode</strong>：顯示用速碼（text input，可輸入）</li>
+  <li><strong>syscodename</strong>：速碼對應名稱（readonly）</li>
+  <li><strong>factory_broker</strong>：廠商佣金算法（select，值域來自 TB_GD_systemCode_200501 codetype='COMMISSION'）</li>
+  <li><strong>handy_broker</strong>：超商佣金算法（同上）</li>
+  <li><strong>our_broker</strong>：我方（安源）佣金算法（同上）</li>
+</ul>
+<p>Show 頁的速碼下拉（salescode_n）值域來自 <code>TB_GD_systemCode_200501</code> codetype='COLLECTION'（codeid=速碼 ID，syscodename=速碼名稱）。</p>
+<div class="callout warn">
+  <strong>GetBroker 為外部 Sub/Function</strong>，定義位置未在這 8 支檔案中，推測在某個 include 檔案中（如 <code>func_Commission.asp</code> 或類似）。
+  改寫時需找到其實際 SQL 邏輯：應查詢 <code>TB_ALEX_TicketCashData_200603</code> by pdid + sales_count，
+  並關聯速碼主表取得 syscode / syscodename。<br>
+  <strong>Show 頁不依賴 GetBroker</strong>：直接用 TB_GD_systemCode_200501 取下拉選單，rs_cash{n} 取已存的 sales_code/factory_broker/handy_broker/our_broker 值來 pre-select。
+</div>
+<h4>寫入驗證規則（Mod_TicketCommission_db）</h4>
+<ul>
+  <li>若 <code>sales_code≠""</code>（梯次有效）：驗證 factory_broker / handy_broker / our_broker 三者非空，任一空 → alert「{x}張未選擇XXX佣金!」+ history.go(-1)；flagcode=1，累積 DELETE+INSERT sql 字串</li>
+  <li>若 <code>sales_code=""</code> → alert「<strong>上架商品代號不可空白!</strong>」+ history.go(-1) + response.end（注意：v1.0 說的「新增商品代碼不可為空白」為誤，以原始碼為準）</li>
+  <li>⚠ factory_broker 驗證失敗時 response.end 被 comment out，僅 handy_broker / our_broker 的 response.end 有效；factory_broker 空白時 ASP 端會繼續執行</li>
+  <li>以上驗證通過後 <code>flagcode=1</code>；只有 <code>flagcode=1</code> 時才執行 MainTicket UPDATE 與 TicketCashData DELETE+INSERT</li>
+</ul>
+
+<h3 id="biz-valuation">6.4 計價方式 (valuation_type / fixed_money / fixed_unit)</h3>
+<div class="callout bad">
+  <strong>⚠ v1.0 推測錯誤（已修正）</strong>：原推測 1=固定金額，現由 Show_TicketCommission.asp UI 邏輯確認：<strong>1=變動售價，2=固定售價</strong>。
+</div>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>valuation_type</code></td><td><strong>1=變動售價</strong>（動態定價，無固定金額）；<strong>2=固定售價</strong>（需填 fixed_money + fixed_unit；fixed_money &lt; 999999）</td></tr>
+    <tr><td><code>fixed_money</code></td><td>固定計價金額（varchar，maxlength=6）；僅 valuation_type=2 時有意義</td></tr>
+    <tr><td><code>fixed_unit</code></td><td>計價單位（int，FK → TB_GD_UnitCode_200501.unitid）；查詢用 conn（非 conn3）</td></tr>
+  </tbody>
+</table>
+
+<h3 id="biz-procedures">6.5 手續費計算方式 (procedures_type)</h3>
+<table>
+  <thead><tr><th>procedures_type 值</th><th>說明</th><th>對 TicketFeeData 的影響</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>內含（無附加手續費）</td><td>不寫入 TicketFeeData（也不清除既有資料）</td></tr>
+    <tr><td>2</td><td>外加（逐梯次設定附加費）</td><td>對每個 sales_code≠"" 的梯次：DELETE + INSERT TicketFeeData（fee_count = 梯次序號，extra_fee = 輸入值）；extra_fee 為必填否則 alert 警告</td></tr>
+  </tbody>
+</table>
+<div class="callout bad">
+  <strong>⚠ procedures_unit 欄位已棄用（推測）</strong>：<br>
+  Mod_TicketCommission_db.asp 中有 <code>'sqlmain= sqlmain &amp; " procedures_unit =" &amp; procedures_unit &amp; ", "</code> 被 comment out，
+  改寫時此欄位可忽略或保留歷史相容。
+</div>
+
+<h3 id="biz-refund">6.6 退票/退款設定 (refund_type / payback_type)</h3>
+<p>寫入時優先執行（不依賴 flagcode）：</p>
+<pre><code>UPDATE TB_ALEX_RefundTicket_201106
+SET refund_type = ?, payback_type = ?
+WHERE pcode_in = ?</code></pre>
+<p>
+  <code>pcode_in</code> 從 Request 取得（由 Mod_TicketCommission 頁面傳送），對應 ERA 商品管理新增時預佔的序號記錄。
+  refund_type / payback_type 的具體值域未在此程式中說明，推測由退費設定子系統（Show_SetRefund / Mod_ERA_Return）另外維護。
+</p>
+
+<h3 id="biz-commissionsetting">6.7 commissionsetting 狀態旗標</h3>
+<p>
+  <code>TB_ALEX_MainTicket_200604.commissionsetting</code> 是工作流狀態旗標，
+  佣金管理設定完成後強制更新為 0：
+</p>
+<pre><code>sqlmain = sqlmain &amp; " commissionsetting = 0 "</code></pre>
+<p>初始值（新增商品時）推測為非 0（如 1 或 NULL），代表「佣金尚未設定」；
+  ERA 商品管理列表（All_ERACommission_Manage_2）顯示 <code>rs("commissionsetting")</code> 欄位值（但被 comment out 未渲染）。
+  改寫時此欄位應整合進工作流狀態機。
+</p>
+
+<h3 id="biz-movie">6.8 電影佣金（Movie）特殊子系統</h3>
+<ul>
+  <li><strong>固定 actionid="0630"</strong>：所有 Movie 商品的 actionid 都是 "0630"，硬編碼在 All_MovieCommission_Manage 查詢與 Select_TicketCommission → hidden input。</li>
+  <li><strong>不同主表</strong>：查詢 <code>TB_CHRIS_MovieDataList_200603</code>（不是 MainTicket），但佣金寫入時用的仍是 pdid + TicketCashData，共用 Mod_TicketCommission_db。</li>
+  <li><strong>商品欄位不同</strong>：顯示 showdate/showtime/seat/showareaid（劇院）取代 programname/startpresaledate 等票務欄位。</li>
+  <li><strong>列表篩選</strong>：All_MovieCommission_Manage 固定 <code>code1=45</code> 查詢 code2（硬編碼，對應電影的 code1 分類值）。</li>
+  <li><strong>pcode_out</strong>：Movie 商品有 pcode_out（出貨碼），是 ERA 商品沒有的欄位。</li>
+</ul>
+
+<!-- ===== 7. 逐頁 ===== -->
+<h2 id="pages">7. 逐頁詳細規格</h2>
+
+<h3 id="p-era-manage" class="file-anchor">7.1 All_ERACommission_Manage.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：ERA 票務佣金查詢篩選條件表單。</p>
+<h4>URL 參數</h4>
+<table>
+  <thead><tr><th>參數</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>mid</td><td>管理群組 ID；廠商 cid 下拉依 left(mid,2) 篩選 TB_GD_SHOPEntry</td></tr>
+    <tr><td>sid / fid / wid</td><td>Session/Function/Work ID（傳遞用）</td></tr>
+    <tr><td>flag</td><td>0=使用相對路徑；非0=Session("folder") 前綴</td></tr>
+    <tr><td>code1~5</td><td>聯動下拉（onChange reload）；code5 送出後不再 reload（無 onChange 事件）</td></tr>
+    <tr><td>cid</td><td>廠商篩選（conn 跨庫，非 conn3）</td></tr>
+    <tr><td>programid / pcode_in / programname / if_batch</td><td>文字搜尋欄（Submit 送到 Manage_2）</td></tr>
+  </tbody>
+</table>
+<p><strong>前端驗證</strong>：programid / pcode_in / programname 禁止特殊字元（同 ERA 商品管理）。</p>
+
+<h3 id="p-era-manage2" class="file-anchor">7.2 All_ERACommission_Manage_2.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：ERA 票務佣金查詢結果分頁列表（pagesize=10）。</p>
+<h4>查詢</h4>
+<p>六表 JOIN（code3 a/code2 b/code1 c/code4 d/code5 e/MainTicket f），篩選條件同 ERA 商品管理，ORDER BY f.code2, f.code3。</p>
+<h4>列表欄位</h4>
+<p>programid、pcode_in、programname、Item1_name（年齡類）、Item2_name（品種）、Item3_name（服務別）、Item4_name（地域）、Item5_name（類型）、批次/非批次、操作按鈕。</p>
+<h4>按鈕決策（依 U_Flag）</h4>
+<p>查 TB_ALEX_Session_200604（pdid, use_flag IN (0,2,3)）：</p>
+<ul>
+  <li>U_Flag=1（eof）→ form POST 到 <code>Mod_TicketCommission.asp</code>（submit 按鈕「修改佣金」）</li>
+  <li>U_Flag≠1 → button 跳到 <code>Show_TicketCommission.asp</code>（「查看詳情」）</li>
+  <li>所有列：button 跳到 <code>Show_SetRefund.asp</code>（「退費設定」）</li>
+</ul>
+
+<h3 id="p-select" class="file-anchor">7.3 Select_TicketCommission.asp <span class="badge b-nav">導航</span></h3>
+<p><strong>用途</strong>：電影類型下拉選擇，選後 onChange 導向 <code>Mid_TicketCommission.asp</code>（外部）。</p>
+<p>查詢 code1（groupid=mid, item_1≠99, use_flag=0），以 actionid 傳入外部中介頁。</p>
+
+<h3 id="p-mod" class="file-anchor">7.4 Mod_TicketCommission.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：ERA 票務佣金設定表單（最複雜的頁面）。POST → <code>Mod_TicketCommission_db.asp</code>。</p>
+<h4>URL 參數</h4>
+<table>
+  <thead><tr><th>參數</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>pdid</td><td>商品 PK（必填）</td></tr>
+    <tr><td>actionid</td><td>票務系統 actionid</td></tr>
+    <tr><td>mid</td><td>管理群組 ID</td></tr>
+    <tr><td>first</td><td>傳給 GetBroker 的參數（推測為初次載入旗標）</td></tr>
+    <tr><td>Syscode0~12</td><td>各梯次的速碼（回傳時帶回已存的值）</td></tr>
+  </tbody>
+</table>
+<h4>表單結構</h4>
+<ol>
+  <li><strong>商品資訊展示區</strong>（唯讀，粉色背景）：<br>
+    item_5="90" 分支：programid + 廠商名稱 + 票面格式 + 收據格式<br>
+    一般商品分支：programid + programname + startpresaledate/time + stoppresaledate/time + 節目類別 + 廠商 + 票面格式 + 收據格式 + 贊助商資訊</li>
+  <li><strong>商品狀態按鈕</strong>（U_Flag=3/4 時顯示「退費設定」→ Mod_ERA_Return）</li>
+  <li><strong>佣金設定區</strong>（<code>title_name</code>="設定"或"查詢"）：<br>
+    &bull; 銷售類型 radio（1=一般/代理，2=代售+BrevityCode 速碼輸入）<br>
+    &bull; 0~12 梯次（各行）：呼叫 GetBroker 取得並渲染 sales_code/factory_broker/handy_broker/our_broker<br>
+    &bull; 手續費計算方式 radio（1=內含，2=外加+各梯次 extra_fee 輸入）<br>
+    &bull; 計價方式選項 + fixed_money + fixed_unit<br>
+    &bull; 退票退款類型（refund_type / payback_type）</li>
+</ol>
+<h4>JavaScript</h4>
+<ul>
+  <li><code>chkbc()</code>：BrevityCode 驗證，自動填充各梯次速碼</li>
+  <li><code>textShower()</code>：Syscode 輸入後查詢顯示名稱（推測為 AJAX 或同步查詢）</li>
+  <li><code>checkdata()</code>：表單 submit 前驗證（具體邏輯未見於此 8 支檔案）</li>
+</ul>
+
+<h3 id="p-mod-db" class="file-anchor">7.5 Mod_TicketCommission_db.asp <span class="badge b-handler">Handler</span></h3>
+<p><strong>用途</strong>：ERA + Movie 共用的佣金寫入 Handler。</p>
+<h4>執行步驟（依序）</h4>
+<ol>
+  <li><strong>讀取所有 Request 參數</strong>：pdid、item_5、sales_type、valuation_type、fixed_money、fixed_unit、procedures_type、refund_type、payback_type、pcode_in、begin_date、end_date、actionid</li>
+  <li><strong>UPDATE RefundTicket</strong>（無論 flagcode）：<br>
+    <code>UPDATE TB_ALEX_RefundTicket_201106 SET refund_type=?, payback_type=? WHERE pcode_in=?</code></li>
+  <li><strong>for x=0 to 12</strong>（13 個梯次）：<br>
+    &bull; 讀 <code>sales_code{x}</code>（注意：factory_broker / handy_broker / our_broker 三者均固定讀 <code>_0</code> 後綴，可能為 bug）<br>
+    &bull; 若 sales_code≠""：驗證 factory_broker/handy_broker/our_broker 非空 → 組合 sql（DELETE + INSERT TicketCashData）; flagcode=1<br>
+    &bull; 若 sales_code=""：alert + history.go(-1)</li>
+  <li><strong>if procedures_type=2</strong>：for y=0 to 12 讀 extra_money_{y} → DELETE + INSERT TicketFeeData</li>
+  <li><strong>if flagcode=1</strong>：<br>
+    <code>UPDATE TB_ALEX_MainTicket_200604 SET Sales_type=?, procedures_type=?, valuation_type=?, fixed_money=?, fixed_unit=?, commissionsetting=0 WHERE pdid=?</code><br>
+    然後執行前面組合的 sql（TicketCashData DELETE+INSERT）</li>
+  <li><strong>成功</strong>：alert + location.href=<code>Mod_TicketCommission.asp?flag=0&amp;pdid=?&amp;mid=?&amp;actionid=?</code>（self-reload）</li>
+</ol>
+<div class="callout bad">
+  <strong>⚠ Bug：梯次 broker 欄位讀取固定取 _0 後綴</strong><br>
+  <code>factory_broker = Request("factory_broker_0")</code><br>
+  <code>handy_broker = Request("handy_broker_0")</code><br>
+  <code>our_broker = Request("our_broker_0")</code><br>
+  在 for x=0 to 12 迴圈中，三者的 Request key 都固定用 <code>_0</code>，未依 x 變化。
+  這意味著梯次 1~12 的 factory_broker/handy_broker/our_broker 均取用梯次 0 的值，<strong>所有梯次的佣金比率實際上都相同</strong>（取梯次 0 的值）。
+  這很可能是 bug（原本應該是 <code>Request("factory_broker_" &amp; x)</code>）。
+</div>
+
+<h3 id="p-show" class="file-anchor">7.6 Show_TicketCommission.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：ERA 票務佣金唯讀檢視；U_Flag=3/4 時亦作為設定確認入口。</p>
+<p>資料讀取方式與 Mod_TicketCommission 相同（同樣的六表 JOIN 查 MainTicket），但所有欄位唯讀（disabled）。</p>
+<ul>
+  <li>ticket_num（票券數）在 Show 頁讀取並顯示，Mod 頁無（差異點）</li>
+  <li>U_Flag=3/4：title_name="設定"；其他：title_name="<strong>預覽</strong>」（原 v1.0 說「查詢」有誤）</li>
+  <li>U_Flag=3/4：顯示「商品資料有誤請退回修改」按鈕 → Mod_ERA_Return.asp</li>
+  <li><strong>form action 指向 <code>Update_UploadProduct_0610_db.asp</code></strong>（外部頁），<strong>非</strong> Mod_TicketCommission_db；推測為「確認佣金設定完成」的另一支 Handler</li>
+  <li>梯次只顯示 1~8（rs_cash1~rs_cash8 各自獨立查詢）；設定頁若有 9~12 梯次，在此頁不可見</li>
+  <li>item_5="90" AND actionid="0610" 分支內會有 <code>actionid=request("mid")</code>，overwrite actionid 變數</li>
+  <li>前端 checkdata() 只驗證梯次 1 (salescode_1、factory_broker_1、handy_broker_1、our_broker_1 非空)；fixed_money 需 &lt;999999</li>
+</ul>
+
+<h3 id="p-movie-manage" class="file-anchor">7.7 All_MovieCommission_Manage.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：電影佣金查詢列表（篩選條件與結果合一頁）。</p>
+<h4>特殊點</h4>
+<ul>
+  <li>固定 actionid="0630"，查 <code>TB_CHRIS_MovieDataList_200603</code></li>
+  <li>code2 篩選下拉固定查詢 <code>code1=45</code>（電影的 code1 硬編碼）</li>
+  <li>篩選欄位：code2~5、pcode_in、pcode_out（ERA 沒有）、Movie_name（取代 programname）、cid、flag_status</li>
+  <li>分頁 URL 攜帶 Item_1 參數（code1 對應的 item_1）</li>
+  <li>列表欄位：item1~5 名稱 + pcode_in + Movie_Id + Movie_name + use_flag 顯示</li>
+  <li>操作按鈕：→ Mod_MovieCommission.asp（無 U_Flag 按鈕邏輯，所有列都直接可修改）</li>
+</ul>
+
+<h3 id="p-movie-mod" class="file-anchor">7.8 Mod_MovieCommission.asp <span class="badge b-page">頁面</span></h3>
+<p><strong>用途</strong>：電影佣金設定表單。結構與 Mod_TicketCommission 幾乎相同，但商品資訊欄位替換為電影欄位。POST → <code>Mod_TicketCommission_db.asp</code>（hidden actionid="0630"）。</p>
+<h4>特有商品欄位（取代票務欄位）</h4>
+<table>
+  <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>Movie_Id / Movie_Name</td><td>電影 ID / 名稱</td></tr>
+    <tr><td>showdate / showtime</td><td>放映日期時間</td></tr>
+    <tr><td>showareaid → place_name</td><td>電影院場地（JOIN TB_ALEX_THEATER_200602）</td></tr>
+    <tr><td>seat</td><td>座位數</td></tr>
+    <tr><td>pcode_out</td><td>出貨碼（ERA 沒有）</td></tr>
+    <tr><td>programkindid → class_name</td><td>電影類別（JOIN TB_ALEX_TicketClass_200602）</td></tr>
+  </tbody>
+</table>
+<p>佣金設定區（GetBroker 0~12、手續費、計價方式）與 Mod_TicketCommission 完全相同。</p>
+
+<!-- ===== 8. 已知缺陷 ===== -->
+<h2 id="known-bugs">8. 已知缺陷與注意事項</h2>
+<table>
+  <thead><tr><th>#</th><th>位置</th><th>問題描述</th><th>風險</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Mod_TicketCommission_db</td><td><strong>梯次 broker 值固定讀 _0</strong>：factory_broker/handy_broker/our_broker 在 for 迴圈中固定讀 Request("XXX_0")，導致梯次 1~12 的佣金與梯次 0 相同</td><td>🔴 高（資料邏輯錯誤）</td></tr>
+    <tr><td>2</td><td>所有 SQL</td><td>SQL 拼接無參數化，存在 SQL Injection 風險（pdid、pcode_in 等直接拼入）</td><td>🔴 高</td></tr>
+    <tr><td>3</td><td>Mod_TicketCommission_db</td><td>TicketCashData 寫入為 DELETE+INSERT，無交易保護；若 INSERT 失敗，舊資料已被刪除</td><td>🟠 中</td></tr>
+    <tr><td>4</td><td>Mod_TicketCommission_db</td><td>sales_code="" 時 alert「<strong>上架商品代號不可空白!</strong>」並 history.go(-1)+response.end（for 迴圈 else 分支），只要任一梯次 sales_code 為空，整個 Submit 都會被終止（v1.0 的 alert 文字描述有誤）</td><td>🟠 中（UX 問題）</td></tr>
+    <tr><td>5</td><td>Mod_TicketCommission_db</td><td>procedures_unit 欄位在 SQL 已 comment out；實際 db 用 <code>request("extra_unit")</code> 接收，變數名 procedures_unit 實為 extra_unit 的值，命名混亂</td><td>🟡 低</td></tr>
+    <tr><td>6</td><td>All_MovieCommission_Manage</td><td>code1=45 硬編碼，若電影分類的 code1 值在資料庫中變動，篩選失效</td><td>🟡 低</td></tr>
+    <tr><td>7</td><td>Select_TicketCommission</td><td>onChange 導向 Mid_TicketCommission.asp（外部），若該頁不存在則靜默失敗</td><td>🟡 低</td></tr>
+    <tr><td>8</td><td>GetBroker</td><td>函式定義位置不在這 8 支檔案中，為外部黑箱；改寫時需確認其完整 SQL 邏輯</td><td>🟠 中（需確認）</td></tr>
+    <tr><td>9</td><td>All_ERACommission_Manage_2</td><td>「退費設定」按鈕指向 Show_SetRefund.asp（外部），但 Show_TicketCommission 頁的同功能按鈕指向 Mod_ERA_Return.asp，同功能兩個不同入口</td><td>🟡 低（需確認是否同一功能）</td></tr>
+    <tr><td>10</td><td>Mod_TicketCommission_db</td><td>RefundTicket UPDATE 無條件執行（不依賴 flagcode），即使佣金驗證失敗，退票設定仍會被修改</td><td>🟠 中</td></tr>
+    <tr><td>11</td><td>Mod_TicketCommission_db</td><td>成功後 redirect 回 Mod_TicketCommission.asp（非 Session("url")），與其他模組成功後回跳行為不一致</td><td>🟡 低（UX）</td></tr>
+    <tr><td>12</td><td>Mod_TicketCommission_db</td><td><strong>factory_broker 驗證失敗不終止</strong>：factory_broker 空時的 <code>response.end</code> 被 comment out，ASP 端繼續執行；handy_broker/our_broker 的 response.end 有效，行為不一致</td><td>🔴 高（驗證失效）</td></tr>
+    <tr><td>13</td><td>Show_TicketCommission</td><td><strong>梯次顯示僅 1~8 張</strong>：Show 頁固定只顯示 1~8 梯次（rs_cash1~rs_cash8），若已設定 9~12 梯次佣金，在唯讀頁完全不可見</td><td>🟠 中（資料不一致顯示）</td></tr>
+    <tr><td>14</td><td>Show_TicketCommission</td><td><strong>actionid 被 overwrite</strong>：item_5="90" 分支內 <code>actionid=request("mid")</code>，將 actionid 覆蓋為 mid 值，後續若 ASP 再用到 actionid 變數會取到錯誤值</td><td>🟡 低</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 9. 改寫建議 ===== -->
+<h2 id="rewrite">9. 改寫建議</h2>
+<ul>
+  <li><strong>修正 Bug #1（最優先）</strong>：將 <code>Request("factory_broker_0")</code> 等改為 <code>Request("factory_broker_" &amp; x)</code>，並確認前端表單的 name 屬性對應修正。</li>
+  <li><strong>UPSERT 替代 DELETE+INSERT</strong>：對 TicketCashData 與 TicketFeeData 使用 <code>MERGE</code>（SQL Server）或 Upsert pattern，搭配交易（BEGIN TRAN / COMMIT / ROLLBACK）確保原子性。</li>
+  <li><strong>參數化查詢</strong>：所有 SQL 改用 parameterized query，根除 SQL Injection。</li>
+  <li><strong>GetBroker 封裝</strong>：找到原始 GetBroker 邏輯後，改寫為 Repository 方法（<code>GetCommissionBroker(pdid, salesCount)</code>），單一責任原則。</li>
+  <li><strong>ERA / Movie 統一介面</strong>：兩個子系統共用一個 Handler，建議在 Service 層以 <code>ProductType</code> enum（Ticket / Movie）做策略模式分支，而非以 actionid 隱性決定。</li>
+  <li><strong>commissionsetting 整合工作流</strong>：將 commissionsetting 整合進商品狀態機（與 ERA 商品管理的 use_flag 統一管理），避免多個旗標各自散落。</li>
+  <li><strong>refund_type / payback_type 同交易</strong>：RefundTicket UPDATE 應納入佣金設定的同一交易中，避免佣金驗證失敗但退票設定已被修改。</li>
+  <li><strong>電影 code1=45 去硬編碼</strong>：從設定檔或資料庫取得電影的 code1 值，不硬編碼。</li>
+</ul>
+
+<footer>
+  本規格文件由 AI 輔助逆向解析 Classic ASP 原始碼（Big5 編碼）產生。<br>
+  <strong>v1.1（2026-07-30）修正項目</strong>：valuation_type 值域（1=變動/2=固定，原推測相反）、Show 頁梯次上限（1~8）、factory_broker 驗證不終止、title_name 實為「預覽」、form action 指向外部頁、alert 錯誤訊息文字、procedures_unit 參數名混亂；新增相依表 TB_GD_systemCode_200501/TB_GD_UnitCode_200501/TB_GD_TicketFormat_Main_200503/TB_ALEX_FormList_200506/Update_UploadProduct_0610_db.asp；已知缺陷由 11 項擴充至 14 項。<br>
+  仍需確認：GetBroker 外部函式完整 SQL 邏輯、refund_type/payback_type 具體值域、Update_UploadProduct_0610_db.asp 實際行為、Mod_TicketCommission.asp 設定頁完整原始碼（未於本次讀取）。
+</footer>
+</main>
+</div>
+</body>
+</html>

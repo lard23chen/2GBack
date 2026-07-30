@@ -89,6 +89,7 @@
   <button data-filter="code4">📍 地區管理(2G)</button>
   <button data-filter="code5">🎫 類型管理(2G)</button>
   <button data-filter="era">🛍 商品管理(ERA)</button>
+  <button data-filter="commission">💰 佣金管理</button>
   <button data-filter="arch">🏗 架構建議</button>
 </div>
 
@@ -203,6 +204,20 @@
     <a href="https://github.com/lard23chen/2GBack/blob/main/era_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
   </td>
   <td class="meta">2026-07-28</td>
+</tr>
+<tr data-cat="commission">
+  <td class="idcell">07</td>
+  <td><span class="tag code2" style="background:var(--tag2-bg);color:var(--tag2-fg);">Commission</span></td>
+  <td class="desc">
+    <span class="zh-name">佣金管理（Commission）</span>
+    ERA 票務与電影商品的佣金設定；0~12 梯次經銷商拆帳（<code>TB_ALEX_TicketCashData_200603</code>）；附加手續費設定；退票/退款設定；ERA與Movie共用同一 Handler；設定完成旉 commissionsetting=0。
+  </td>
+  <td class="stat">8 個 ASP 檔<br>14 項已知缺陷</td>
+  <td class="links">
+    <a href="commission_system_spec.html">📄 規格文件 (HTML)</a>
+    <a href="https://github.com/lard23chen/2GBack/blob/main/commission_system_spec.html" target="_blank" rel="noopener">🔗 GitHub 原始碼檢視</a>
+  </td>
+  <td class="meta">2026-07-30</td>
 </tr>
 </tbody>
 </table>
